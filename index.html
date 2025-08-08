@@ -1,87 +1,3 @@
-<!doctype html>
-<html lang="fr">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Attrape-Abeilles Bürchen 🐝🍯 – stable</title>
-<style>
-  :root{--gold:#c69a57;--ink:#111;--bg:#0d0a08;--panel:#131313;--line:#2b2b2b}
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-  .wrap{display:grid;grid-template-rows:auto auto auto 1fr auto;min-height:100dvh}
-  header{display:flex;gap:12px;align-items:center;padding:max(10px,env(safe-area-inset-top)) 14px 10px;background:#111;border-bottom:1px solid var(--line)}
-  .label{width:56px;height:56px;border-radius:10px;border:1px solid #6c512c;object-fit:cover}
-  .title h1{margin:0 0 2px 0;font-size:clamp(18px,4.6vw,28px)}
-  .title p{margin:0;color:#cbb48b}
-  .avatar{width:64px;height:64px;border-radius:50%;overflow:hidden;border:1px solid #3a2d1a} /* ← plus grand */
-  .avatar img{width:100%;height:100%;object-fit:cover}
-  .fact{padding:8px 14px;background:#151515;border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:#e7d6b8;font-size:14px}
-  .hud{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:#101010;border-bottom:1px solid var(--line)}
-  .pill{background:#1a1a1a;border:1px solid #3a2d1a;border-radius:999px;padding:7px 12px;font-weight:700}
-  .btn{cursor:pointer;background:var(--gold);color:var(--ink);border:none;border-radius:12px;padding:10px 14px;font-weight:800}
-  .btn.alt{background:#1a1a1a;color:#fff;border:1px solid #3a2d1a}
-  .canvasWrap{position:relative;width:100%;height:calc(100dvh - 300px);min-height:360px;touch-action:none}
-  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;background:radial-gradient(1200px 600px at 20% 20%,#1a1410,#0d0a08 60%)}
-  .overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.45)}
-  .card{background:var(--panel);border:1px solid #3a2d1a;border-radius:16px;padding:18px;max-width:720px}
-  .toasts{position:fixed;left:0;right:0;bottom:12px;display:grid;place-items:center;pointer-events:none}
-  .toast{background:#222;border:1px solid #3a2d1a;border-radius:12px;padding:10px 14px;box-shadow:0 8px 30px rgba(0,0,0,.4)}
-  footer{padding:10px 14px env(safe-area-inset-bottom);color:#cbb48b;font-size:13px;border-top:1px solid var(--line)}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <img class="label" src="4A20A11D-FFE4-40F0-B5C8-41535E58C891.jpeg" alt="Étiquette Bürchen">
-    <div class="title">
-      <h1>Attrape-Abeilles <span style="color:#c69a57">Bürchen</span> 🐝🍯</h1>
-      <p>Avec David, apiculteur en Valais. (version stable mobile)</p>
-    </div>
-    <div class="avatar"><img src="999BE385-AE83-4F5F-8B9E-D1371F104F83.jpeg" alt="David"></div>
-  </header>
-
-  <div class="fact" id="fact">Conseil : double-tap pour envoyer un peu de fumée calmante 💨.</div>
-
-  <div class="hud">
-    <div class="pill">Score : <span id="score">0</span></div>
-    <div class="pill">Multiplicateur : <span id="multi">x1</span></div>
-    <div class="pill">Temps : <span id="time">90</span>s</div>
-    <button class="btn" id="play">▶️ Jouer</button>
-    <button class="btn alt" id="pause">⏸️ Pause</button>
-    <button class="btn" id="smoke">💨 Fumée</button>
-  </div>
-
-  <div class="canvasWrap">
-    <canvas id="game"></canvas>
-
-    <div class="overlay" id="splash">
-      <div class="card">
-        <h2>Bienvenue 🧑‍🌾</h2>
-        <p>Attrape les abeilles avec le pot de miel artisanal <b>Bürchen</b>.<br>
-        <small>Simple, fluide, surprises légères… et des infos utiles 🧠.</small></p>
-        <ul style="text-align:left;max-width:640px;margin:10px auto;line-height:1.6">
-          <li>Glisse le doigt (ou la souris) : le pot suit.</li>
-          <li>Abeille = +10 • Reine = +50 • Guêpe = −10 (1 seule, lente).</li>
-          <li>3 captures d’affilée ⇒ <b>miel doré</b> (points x2, 8s).</li>
-          <li>💨 Fumée ou double-tap : calme tout le monde 6s.</li>
-        </ul>
-        <button class="btn" id="startA">🍯 Commencer</button>
-      </div>
-    </div>
-
-    <div class="overlay" id="gameover" style="display:none">
-      <div class="card">
-        <h2>Fin de partie</h2>
-        <p id="final"></p>
-        <button class="btn" id="restart">🔁 Rejouer</button>
-      </div>
-    </div>
-  </div>
-
-  <footer>Photo ruche centrée. Code sans dépendances. Si ça clignote, j’apporte le spray anti-bugs 🪲.</footer>
-</div>
-<div class="toasts" id="toasts"></div>
-
 <script>
 (()=>{ // ===== Jeu stable + ruche centrée + avatar plus grand =====
   const $ = (id)=>document.getElementById(id);
@@ -93,30 +9,31 @@
 
   // Images (préchargées + robustes)
   const label = new Image(), hive = new Image();
-  const HIVE_SRC="719AC91B-EB0C-40B6-88AA-254CEA3F46CD.png"; // ← ton fichier
-  label.src="4A20A11D-FFE4-40F0-B5C8-41535E58C891.jpeg";
-  hive.src=HIVE_SRC;
+  const HIVE_SRC = "719AC91B-EB0C-40B6-88AA-254CEA3F46CD.png"; // ruche
+  label.src = "IMG_7585.jpeg";            // ← NOUVELLE ÉTIQUETTE
+  hive.src  = HIVE_SRC;
+
   let labelReady=false, hiveReady=false;
-  label.onload=()=>labelReady=true; hive.onload=()=>{hiveReady=true; resize()};
+  label.onload=()=>labelReady=true; 
+  hive.onload =()=>{ hiveReady=true; resize(); };
 
   // Layout / DPR
-  let W=1280,H=720; let hiveRect={x:0,y:0,w:0,h:0}, hiveMouth={x:0,y:0};
+  let W=1280,H=720; 
+  let hiveRect={x:0,y:0,w:0,h:0}, hiveMouth={x:0,y:0};
   function resize(){
     const dpr=Math.min(devicePixelRatio||1,2);
     W=C.clientWidth; H=C.clientHeight;
     C.width=Math.floor(W*dpr); C.height=Math.floor(H*dpr);
     X.setTransform(dpr,0,0,dpr,0,0);
 
-    // taille de la photo : 80% de la largeur, mais jamais plus de 70% de la hauteur
     const ratio = hiveReady ? hive.naturalWidth/hive.naturalHeight : (1536/707);
     let w = Math.min(W*0.80, H*0.70*ratio);
     let h = w/ratio;
     hiveRect = { w, h, x:(W-w)/2, y:(H-h)/2 };
-
-    // bouche d’envol (repère ~sur la façade bleue)
     hiveMouth = { x: hiveRect.x + hiveRect.w*0.72, y: hiveRect.y + hiveRect.h*0.56 };
   }
-  addEventListener('resize', resize, {passive:true}); resize();
+  addEventListener('resize', resize, {passive:true}); 
+  resize();
 
   // Etat jeu
   let running=false, paused=false, t0=0, timer=90, score=0, mult=1;
@@ -134,11 +51,12 @@
   ];
   let factIdx=0, nextFactAt=6;
 
-  // UI helpers
-  function toast(msg){ if(toasts.childElementCount>=1) return;
+  function toast(msg){ 
+    if(toasts.childElementCount>=1) return;
     const d=document.createElement('div'); d.className='toast'; d.textContent=msg; toasts.appendChild(d);
     setTimeout(()=>{d.style.opacity='0'; d.style.transform='translateY(-6px)'}, 1100);
-    setTimeout(()=>d.remove(), 1500); }
+    setTimeout(()=>d.remove(), 1500); 
+  }
   function hud(){ scoreEl.textContent=score; multiEl.textContent="x"+mult; timeEl.textContent=Math.ceil(timer); }
 
   // Spawns (sortent de la bouche de la ruche)
@@ -147,78 +65,137 @@
     ents.push({t:queen?'Q':'B', x:hiveMouth.x+Math.cos(ang)*r, y:hiveMouth.y+Math.sin(ang)*r,
       vx:0,vy:0,r:queen?13:10,spd:0.9+(Math.random()*0.6),sw:Math.random()*6.28});
   }
-  function spawnWasp(){ ents.push({t:'W',x:Math.random()*W,y:Math.random()*H,vx:0,vy:0,r:12,spd:1.1,sw:Math.random()*6.28,cd:0}); }
+  function spawnWasp(){ 
+    ents.push({t:'W',x:Math.random()*W,y:Math.random()*H,vx:0,vy:0,r:12,spd:1.1,sw:Math.random()*6.28,cd:0}); 
+  }
   function reset(){
     score=0; timer=90; mult=1; goldenLeft=0; smokeLeft=0; serie=0; serieTTL=0; ents.length=0;
-    for(let i=0;i<MAX_BEES;i++) spawnBee(Math.random()<.12); if(ONE_WASP) spawnWasp();
-    pot.x=W/2; pot.y=H/2; hud(); nextFactAt=6; factEl.textContent="Conseil : double-tap pour envoyer un peu de fumée calmante 💨.";
+    for(let i=0;i<MAX_BEES;i++) spawnBee(Math.random()<.12);
+    if(ONE_WASP) spawnWasp();
+    pot.x=W/2; pot.y=H/2; hud(); nextFactAt=6;
+    factEl.textContent="Conseil : double-tap pour envoyer un peu de fumée calmante 💨.";
   }
 
   // Entrées
-  function setPtr(e){ const b=C.getBoundingClientRect();
+  function setPtr(e){ 
+    const b=C.getBoundingClientRect();
     if(e.touches?.[0]){ ptr.x=e.touches[0].clientX-b.left; ptr.y=e.touches[0].clientY-b.top; }
-    else if(e.clientX!=null){ ptr.x=e.clientX-b.left; ptr.y=e.clientY-b.top; } }
+    else if(e.clientX!=null){ ptr.x=e.clientX-b.left; ptr.y=e.clientY-b.top; } 
+  }
   C.addEventListener('mousemove', setPtr);
   C.addEventListener('touchstart',(e)=>{ setPtr(e); const n=performance.now();
     if(n-ptr.lastTap<300) smokeLeft=Math.max(smokeLeft,6); ptr.lastTap=n; }, {passive:true});
   C.addEventListener('touchmove', setPtr, {passive:true});
 
   // Physique
-  function attract(ax,ay,bx,by,str){ let dx=ax-bx,dy=ay-by,d2=dx*dx+dy*dy; if(d2<1) d2=1;
-    const d=Math.sqrt(d2), f=Math.max(-.08,Math.min(.08,str/d2)); return {fx:(dx/d)*f,fy:(dy/d)*f,d}; }
+  function attract(ax,ay,bx,by,str){ 
+    let dx=ax-bx,dy=ay-by,d2=dx*dx+dy*dy; if(d2<1) d2=1;
+    const d=Math.sqrt(d2), f=Math.max(-.08,Math.min(.08,str/d2));
+    return {fx:(dx/d)*f, fy:(dy/d)*f, d}; 
+  }
 
   // Rendu
-  function drawGrid(){ X.globalAlpha=.18;
+  function drawGrid(){ 
+    X.globalAlpha=.18;
     for(let i=0;i<W;i+=64){ X.beginPath(); X.moveTo(i,0); X.lineTo(i,H); X.strokeStyle='#261d14'; X.stroke(); }
     for(let j=0;j<H;j+=64){ X.beginPath(); X.moveTo(0,j); X.lineTo(W,j); X.strokeStyle='#261d14'; X.stroke(); }
-    X.globalAlpha=1; }
-  function drawHive(){ if(!hiveReady) return;
-    X.fillStyle="rgba(0,0,0,.15)"; X.fillRect(hiveRect.x-8, hiveRect.y-8, hiveRect.w+16, hiveRect.h+16);
+    X.globalAlpha=1; 
+  }
+  function drawHive(){ 
+    if(!hiveReady) return;
+    X.fillStyle="rgba(0,0,0,.15)";
+    X.fillRect(hiveRect.x-8, hiveRect.y-8, hiveRect.w+16, hiveRect.h+16);
     X.drawImage(hive, hiveRect.x, hiveRect.y, hiveRect.w, hiveRect.h);
-    X.fillStyle="rgba(198,154,87,.30)"; X.beginPath(); X.arc(hiveMouth.x, hiveMouth.y, 7, 0, Math.PI*2); X.fill(); }
-  function drawJar(){ const r=60; X.save(); X.translate(pot.x,pot.y);
+    X.fillStyle="rgba(198,154,87,.30)";
+    X.beginPath(); X.arc(hiveMouth.x, hiveMouth.y, 7, 0, Math.PI*2); X.fill();
+  }
+  function drawJar(){ 
+    const r=60; X.save(); X.translate(pot.x,pot.y);
     X.beginPath(); X.moveTo(-r*.6,-r*.6); X.quadraticCurveTo(-r*.9,r*.2,-r*.5,r*.9);
     X.quadraticCurveTo(0,r*1.2,r*.5,r*.9); X.quadraticCurveTo(r*.9,r*.2,r*.6,-r*.6); X.closePath();
     X.fillStyle='#2b2116'; X.fill(); X.lineWidth=2; X.strokeStyle='#6c512c'; X.stroke();
     if(labelReady) X.drawImage(label,-43,-56,86,112);
-    X.globalAlpha=.45; X.beginPath(); X.arc(0,10,70,0,Math.PI*2); X.fillStyle=goldenLeft>0?'#ffd777':'#c69a57'; X.fill(); X.globalAlpha=1; X.restore(); }
-  function drawBee(b){ X.save(); X.translate(b.x,b.y);
-    X.beginPath(); X.fillStyle=b.t=='Q'?'#ffd777':'#e6c15e'; X.ellipse(0,0,b.r+2,b.r,0,0,Math.PI*2); X.fill();
-    X.lineWidth=2; X.strokeStyle='#2b2116'; X.beginPath(); X.moveTo(-b.r,-2); X.lineTo(b.r,-2); X.moveTo(-b.r,2); X.lineTo(b.r,2); X.stroke(); X.restore(); }
-  function drawWasp(w){ X.save(); X.translate(w.x,w.y); X.beginPath(); X.fillStyle='#ff6969'; X.ellipse(0,0,w.r+2,w.r,0,0,Math.PI*2); X.fill(); X.restore(); }
+    X.globalAlpha=.45; X.beginPath(); X.arc(0,10,70,0,Math.PI*2);
+    X.fillStyle=goldenLeft>0?'#ffd777':'#c69a57'; X.fill(); X.globalAlpha=1; X.restore(); 
+  }
+  function drawBee(b){ 
+    X.save(); X.translate(b.x,b.y);
+    X.beginPath(); X.fillStyle=b.t=='Q'?'#ffd777':'#e6c15e';
+    X.ellipse(0,0,b.r+2,b.r,0,0,Math.PI*2); X.fill();
+    X.lineWidth=2; X.strokeStyle='#2b2116';
+    X.beginPath(); X.moveTo(-b.r,-2); X.lineTo(b.r,-2); X.moveTo(-b.r,2); X.LineTo; 
+    X.moveTo(-b.r,2); X.lineTo(b.r,2); X.stroke();
+    X.restore(); 
+  }
+  function drawWasp(w){ 
+    X.save(); X.translate(w.x,w.y); X.beginPath(); X.fillStyle='#ff6969';
+    X.ellipse(0,0,w.r+2,w.r,0,0,Math.PI*2); X.fill(); X.restore(); 
+  }
 
-  // Boucle
   function step(dt){
     nextFactAt-=dt; if(nextFactAt<=0){ factEl.textContent="ℹ️ "+FACTS[factIdx++%FACTS.length]; nextFactAt=9; }
     const ez=Math.min(1,dt*6); pot.x+=(ptr.x-pot.x)*ez; pot.y+=(ptr.y-pot.y)*ez;
 
     const AS=3300;
     for(let i=ents.length-1;i>=0;i--){
-      const e=ents[i]; e.sw+=dt*(.4+Math.random()*.6); e.vx+=Math.cos(e.sw)*.04; e.vy+=Math.sin(e.sw)*.04;
+      const e=ents[i];
+      e.sw+=dt*(.4+Math.random()*.6); e.vx+=Math.cos(e.sw)*.04; e.vy+=Math.sin(e.sw)*.04;
+
       if(e.t!=='W'){
-        const sl=smokeLeft>0?.65:1; const {fx,fy,d}=attract(pot.x,pot.y,e.x,e.y,AS*sl);
-        e.vx+=fx; e.vy+=fy; const cap=2.0*e.spd*sl; e.vx=Math.max(-cap,Math.min(cap,e.vx)); e.vy=Math.max(-cap,Math.min(cap,e.vy));
+        const sl=smokeLeft>0?.65:1; 
+        const {fx,fy,d}=attract(pot.x,pot.y,e.x,e.y,AS*sl);
+        e.vx+=fx; e.vy+=fy; 
+        const cap=2.0*e.spd*sl; 
+        e.vx=Math.max(-cap,Math.min(cap,e.vx)); 
+        e.vy=Math.max(-cap,Math.min(cap,e.vy));
         e.x+=e.vx; e.y+=e.vy;
-        if(d<85){ score+=(e.t==='Q'?50:10)*mult; serie++; serieTTL=3; if(serie%3===0){goldenLeft=8;mult=2;toast("✨ Miel doré : points x2 !");}
-          ents.splice(i,1); spawnBee(Math.random()<.1); continue; }
+        if(d<85){ 
+          score+=(e.t==='Q'?50:10)*mult; 
+          serie++; serieTTL=3; 
+          if(serie%3===0){ goldenLeft=8; mult=2; toast("✨ Miel doré : points x2 !"); }
+          ents.splice(i,1); spawnBee(Math.random()<.1); continue; 
+        }
       }else{
-        const sl=smokeLeft>0?.55:1; const {fx,fy}=attract(e.x,e.y,pot.x,pot.y,3000*sl);
-        e.vx+=fx; e.vy+=fy; const cap=2.2*e.spd*sl; e.vx=Math.max(-cap,Math.min(cap,e.vx)); e.vy=Math.max(-cap,Math.min(cap,e.vy));
-        e.x+=e.vx; e.y+=e.vy; if(e.cd>0) e.cd-=dt;
-        if(e.cd<=0 && Math.hypot(e.x-pot.x,e.y-pot.y)<58){ score=Math.max(0,score-10); serie=0; serieTTL=0; mult=goldenLeft>0?2:1; e.cd=.9; toast("Aïe ! Guêpe un peu susceptible 🐝"); }
+        const sl=smokeLeft>0?.55:1; 
+        const {fx,fy}=attract(e.x,e.y,pot.x,pot.y,3000*sl);
+        e.vx+=fx; e.vy+=fy; 
+        const cap=2.2*e.spd*sl; 
+        e.vx=Math.max(-cap,Math.min(cap,e.vx)); 
+        e.vy=Math.max(-cap,Math.min(cap,e.vy));
+        e.x+=e.vx; e.y+=e.vy; 
+        if(e.cd>0) e.cd-=dt;
+        if(e.cd<=0 && Math.hypot(e.x-pot.x,e.y-pot.y)<58){ 
+          score=Math.max(0,score-10); serie=0; serieTTL=0; mult=goldenLeft>0?2:1; e.cd=.9; 
+          toast("Aïe ! Guêpe un peu susceptible 🐝"); 
+        }
       }
-      if(e.x<-20)e.x=W+20; if(e.x>W+20)e.x=-20; if(e.y<-20)e.y=H+20; if(e.y>H+20)e.y=-20;
+
+      if(e.x<-20)e.x=W+20; if(e.x>W+20)e.x=-20;
+      if(e.y<-20)e.y=H+20; if(e.y>H+20)e.y=-20;
     }
+
     if(serieTTL>0){ serieTTL-=dt; if(serieTTL<=0) serie=0; }
     if(goldenLeft>0){ goldenLeft-=dt; if(goldenLeft<=0) mult=1; }
     if(smokeLeft>0) smokeLeft-=dt;
 
-    timer-=dt; if(timer<=0){ endGame(); return; } hud();
+    timer-=dt; if(timer<=0){ endGame(); return; } 
+    hud();
   }
-  function render(){ X.clearRect(0,0,W,H); drawHive(); drawGrid(); for(const e of ents){(e.t==='W')?drawWasp(e):drawBee(e)} drawJar(); }
-  function loop(t){ if(!running) return; if(!paused){ const dt=Math.min(.033,(t-t0)/1000); t0=t; step(dt); render(); } requestAnimationFrame(loop); }
 
-  // Contrôles
+  function render(){ 
+    X.clearRect(0,0,W,H); 
+    drawHive(); 
+    drawGrid(); 
+    for(const e of ents){ (e.t==='W')?drawWasp(e):drawBee(e); } 
+    drawJar(); 
+  }
+
+  function loop(t){ 
+    if(!running) return; 
+    if(!paused){ const dt=Math.min(.033,(t-t0)/1000); t0=t; step(dt); render(); } 
+    requestAnimationFrame(loop); 
+  }
+
   function start(){ reset(); running=true; paused=false; splash.style.display="none"; over.style.display="none"; t0=performance.now(); requestAnimationFrame(loop); }
   function pauseToggle(){ if(!running) return; paused=!paused; bPause.textContent=paused?"▶️ Reprendre":"⏸️ Pause"; }
   function endGame(){ running=false; over.style.display="grid"; $('final').textContent=`Score : ${score}  •  Multiplicateur max : x${mult}`; }
@@ -228,9 +205,6 @@
   bSmoke.onclick=()=>{ smokeLeft=Math.max(smokeLeft,6); toast("💨 “Tout doux les copines.” — David"); };
   let armed=true; window.addEventListener('pointerdown',()=>{ if(armed){ armed=false; start(); } }, {once:true, passive:true});
 
-  // Init
   splash.style.display="grid"; over.style.display="none"; hud();
 })();
 </script>
-</body>
-</html>
