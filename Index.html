@@ -1,0 +1,92 @@
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Attrape-Abeilles Bürchen 🐝🍯</title>
+<style>
+  :root{--gold:#c69a57;--ink:#111;--bg:#0e0e0e;--border:#2b2b2b}
+  html,body{margin:0;height:100%;background:var(--bg);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  .wrap{display:grid;grid-template-rows:auto auto 1fr auto;gap:10px;min-height:100dvh}
+  header{padding:max(10px,env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#111;border-bottom:1px solid var(--border)}
+  .label{width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid #6c512c}
+  .title h1{margin:0 0 4px 0;font-size:clamp(18px,4.5vw,30px)} .title p{margin:0;color:#cbb48b}
+  .avatar{width:40px;height:40px;border-radius:50%;overflow:hidden;border:1px solid #3a2d1a}
+  .avatar img{width:100%;height:100%;object-fit:cover}
+  .hud{display:flex;align-items:center;gap:10px;padding:6px 16px;flex-wrap:wrap}
+  .pill{background:#1a1a1a;border:1px solid #3a2d1a;border-radius:999px;padding:7px 12px;font-weight:700}
+  .btn{cursor:pointer;background:var(--gold);color:var(--ink);border:none;border-radius:12px;padding:11px 14px;font-weight:800}
+  .btn.alt{background:#1a1a1a;color:#fff;border:1px solid #3a2d1a}
+  .canvasWrap{position:relative;width:100%;height:calc(100dvh - 300px);min-height:320px;touch-action:none}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;background:radial-gradient(1200px 600px at 20% 20%,#1a1410,#0d0a08 60%);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .overlay{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;background:linear-gradient(180deg,rgba(0,0,0,.65),rgba(0,0,0,.35));z-index:2}
+  .card{background:#111;border:1px solid #3a2d1a;border-radius:16px;padding:18px;max-width:760px}
+  .toasts{position:fixed;inset:auto 0 10px 0;display:grid;place-items:center;gap:8px;pointer-events:none;z-index:5}
+  .toast{background:#222;border:1px solid #3a2d1a;color:#fff;padding:10px 14px;border-radius:12px}
+</style>
+</head><body>
+<div class="wrap">
+  <header>
+    <img class="label" src="4A20A11D-FFE4-40F0-B5C8-41535E58C891.jpeg" alt="Étiquette Bürchen">
+    <div class="title"><h1>Attrape-Abeilles <span style="color:#c69a57">Bürchen</span> 🐝🍯</h1><p>Avec David, apiculteur en Valais.</p></div>
+    <div class="avatar"><img src="999BE385-AE83-4F5F-8B9E-D1371F104F83.jpeg" alt="David"></div>
+  </header>
+
+  <div class="hud">
+    <div class="pill">Score : <span id="score">0</span></div>
+    <div class="pill">Combo : <span id="combo">x1</span></div>
+    <div class="pill">Temps : <span id="time">60</span>s</div>
+    <button class="btn" id="startBtn">▶️ Jouer / Rejouer</button>
+    <button class="btn alt" id="pauseBtn">⏸️ Pause</button>
+    <button class="btn" id="smokeBtn">💨 Fumée</button>
+  </div>
+
+  <div class="canvasWrap">
+    <canvas id="game"></canvas>
+    <div class="overlay" id="splash" hidden><div class="card">
+      <h2>Bienvenue 🧑‍🌾</h2><p>Attrape un max d’abeilles. Double-tap = fumée calmante.</p>
+      <button class="btn" id="startBtn2">🍯 Commencer</button></div></div>
+    <div class="overlay" id="gameOver" hidden><div class="card">
+      <h2 id="endTitle">Fin de partie</h2><p id="endMsg"></p>
+      <button class="btn" id="restartBtn">🔁 Rejouer</button></div></div>
+  </div>
+
+  <footer style="padding:10px 16px;color:#cbb48b;border-top:1px solid #2b2b2b">Version GitHub Pages.</footer>
+</div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+(()=>{const C=document.getElementById('game'),X=C.getContext('2d');let W=1280,H=720;function rsz(){const dpr=Math.min(devicePixelRatio||1,2);W=C.clientWidth;H=C.clientHeight;C.width=Math.floor(W*dpr);C.height=Math.floor(H*dpr);X.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',rsz,{passive:!0});rsz();
+const splash=document.getElementById('splash'),over=document.getElementById('gameOver');
+const s1=document.getElementById('startBtn'),s2=document.getElementById('startBtn2'),r=document.getElementById('restartBtn'),p=document.getElementById('pauseBtn'),sm=document.getElementById('smokeBtn');
+const scoreEl=document.getElementById('score'),comboEl=document.getElementById('combo'),timeEl=document.getElementById('time'),toasts=document.getElementById('toasts');
+const label=new Image();label.src="4A20A11D-FFE4-40F0-B5C8-41535E58C891.jpeg";
+
+const ptr={x:W/2,y:H/2,last:0};function setPtr(e){const b=C.getBoundingClientRect();if(e.touches&&e.touches[0]){ptr.x=e.touches[0].clientX-b.left;ptr.y=e.touches[0].clientY-b.top}else if(e.clientX!=null){ptr.x=e.clientX-b.left;ptr.y=e.clientY-b.top}}
+C.addEventListener('mousemove',setPtr);C.addEventListener('touchstart',e=>{setPtr(e);const n=performance.now();if(n-ptr.last<300)smoke=4;ptr.last=n},{passive:!0});C.addEventListener('touchmove',setPtr,{passive:!0});
+
+let run=false,pause=false,t0=0,timer=60,score=0,combo=0,ct=0,golden=0,smoke=0,ents=[],pot={x:W/2,y:H/2};
+const MAXB=12,MAXW=3;function toast(m){const d=document.createElement('div');d.className='toast';d.textContent=m;toasts.appendChild(d);setTimeout(()=>d.remove(),1700)}
+function reset(){score=0;combo=0;ct=0;golden=0;smoke=0;timer=60;ents=[];for(let i=0;i<MAXB;i++)spawnB(Math.random()<.08);for(let i=0;i<MAXW;i++)if(Math.random()<.6)spawnW();pot.x=W/2;pot.y=H/2;hud()}
+function spawnB(q=false){const s=Math.floor(Math.random()*4),m=30;ents.push({t:q?'Q':'B',x:s==0?-m:s==1?W+m:Math.random()*W,y:s==2?-m:s==3?H+m:Math.random()*H,vx:0,vy:0,spd:(.6+Math.random())*(q?.9:1),r:q?12:8,sw:Math.random()*6.28})}
+function spawnW(){ents.push({t:'W',x:Math.random()*W,y:Math.random()*H,vx:0,vy:0,spd:1.2+Math.random(),r:10,sw:Math.random()*6.28})}
+function hud(){comboEl.textContent=`x${golden>0?2:1} / série ${combo}${smoke>0?' • 💨':''}`;scoreEl.textContent=score;timeEl.textContent=Math.ceil(timer)}
+function att(ax,ay,bx,by,s){let dx=ax-bx,dy=ay-by,d2=dx*dx+dy*dy,d=Math.sqrt(d2)||.0001,f=Math.max(-.08,Math.min(.08,s/d2));return{fx:dx/d*f,fy:dy/d*f,d}}
+function jar(){const r=60;X.save();X.translate(pot.x,pot.y);X.beginPath();X.moveTo(-r*.6,-r*.6);X.quadraticCurveTo(-r*.9,r*.2,-r*.5,r*.9);X.quadraticCurveTo(0,r*1.2,r*.5,r*.9);X.quadraticCurveTo(r*.9,r*.2,r*.6,-r*.6);X.closePath();X.fillStyle='#2b2116';X.fill();X.lineWidth=2;X.strokeStyle='#6c512c';X.stroke();X.drawImage(label,-43,-56,86,112);X.globalAlpha=.45;X.beginPath();X.arc(0,10,70,0,6.28);X.fillStyle=golden>0?'#ffd777':'#c69a57';X.fill();X.globalAlpha=1;X.restore()}
+function bee(b){X.save();X.translate(b.x,b.y);X.beginPath();X.fillStyle=b.t=='Q'?'#ffd777':'#e6c15e';X.ellipse(0,0,b.r+2,b.r,0,0,6.28);X.fill();X.lineWidth=2;X.strokeStyle='#2b2116';X.beginPath();X.moveTo(-b.r,-2);X.lineTo(b.r,-2);X.moveTo(-b.r,2);X.lineTo(b.r,2);X.stroke();X.restore()}
+function wasp(w){X.save();X.translate(w.x,w.y);X.beginPath();X.fillStyle='#ff5858';X.ellipse(0,0,w.r+2,w.r,0,0,6.28);X.fill();X.restore()}
+function step(dt){const ez=Math.min(1,dt*6);pot.x+=(ptr.x-pot.x)*ez;pot.y+=(ptr.y-pot.y)*ez;const AS=2500;
+  for(let i=ents.length-1;i>=0;i--){const e=ents[i];e.sw+=dt*(.5+Math.random()*.7);e.vx+=Math.cos(e.sw)*.05;e.vy+=Math.sin(e.sw)*.05;
+    if(e.t!='W'){const sl=smoke>0?.6:1;const {fx,fy,d}=att(pot.x,pot.y,e.x,e.y,AS*sl);e.vx+=fx;e.vy+=fy;const cap=2.4*e.spd*sl;e.vx=Math.max(-cap,Math.min(cap,e.vx));e.vy=Math.max(-cap,Math.min(cap,e.vy));e.x+=e.vx;e.y+=e.vy;
+      if(d<60){score+=(e.t=='Q'?50:10)*(golden>0?2:1);combo++;ct=2.5;if(combo%5==0){golden=10;toast('Miel doré ✨')}ents.splice(i,1);spawnB(Math.random()<.08);continue}}
+    else{const sl=smoke>0?.5:1;const {fx,fy}=att(e.x,e.y,pot.x,pot.y,3500*sl);e.vx+=fx;e.vy+=fy;const cap=2.6*e.spd*sl;e.vx=Math.max(-cap,Math.min(cap,e.vx));e.vy=Math.max(-cap,Math.min(cap,e.vy));e.x+=e.vx;e.y+=e.vy;
+      if(Math.hypot(e.x-pot.x,e.y-pot.y)<54){score=Math.max(0,score-20);combo=0;ct=0;}}
+    if(e.x<-20)e.x=W+20;if(e.x>W+20)e.x=-20;if(e.y<-20)e.y=H+20;if(e.y>H+20)e.y=-20}
+  timer-=dt;if(timer<=0){run=false;over.hidden=false;document.getElementById('endMsg').textContent='Score : '+score;return}
+  if(ct>0){ct-=dt;if(ct<=0)combo=0} if(golden>0)golden-=dt; if(smoke>0)smoke-=dt; hud()}
+function render(){X.clearRect(0,0,W,H);X.globalAlpha=.25;for(let i=0;i<W;i+=64){X.beginPath();X.moveTo(i,0);X.lineTo(i,H);X.strokeStyle='#251d14';X.stroke()}for(let j=0;j<H;j+=64){X.beginPath();X.moveTo(0,j);X.lineTo(W,j);X.strokeStyle='#251d14';X.stroke()}X.globalAlpha=1;for(const e of ents){(e.t=='W')?wasp(e):bee(e)}jar()}
+function loop(t){if(!run)return;if(!pause){const dt=Math.min(.033,(t-t0)/1000);t0=t;step(dt);render()}requestAnimationFrame(loop)}
+function start(){reset();run=true;pause=false;t0=performance.now();splash.hidden=true;over.hidden=true;requestAnimationFrame(loop)}
+function toggle(){if(!run)return;pause=!pause;document.getElementById('pauseBtn').textContent=pause?'▶️ Reprendre':'⏸️ Pause'}
+document.getElementById('smokeBtn').onclick=()=>smoke=4;
+document.getElementById('startBtn').onclick=start; if(s2) s2.onclick=start; if(r) r.onclick=start; document.getElementById('pauseBtn').onclick=toggle;
+splash.hidden=false;})();
+</script>
+</body></html>
