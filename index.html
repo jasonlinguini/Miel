@@ -1,9 +1,12 @@
-<!doctype html><html lang="fr"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Attrape-Abeilles Bürchen 🐝🍯</title>
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Attrape-Abeilles Bürchen 🐝🍯 – Fun & Apprentissage</title>
 <style>
   :root{--gold:#c69a57;--ink:#111;--bg:#0e0e0e;--border:#2b2b2b}
-  html,body{margin:0;height:100%;background:var(--bg);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
   .wrap{display:grid;grid-template-rows:auto auto 1fr auto;gap:10px;min-height:100dvh}
   header{padding:max(10px,env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#111;border-bottom:1px solid var(--border)}
   .label{width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid #6c512c}
@@ -18,21 +21,36 @@
   canvas{position:absolute;inset:0;width:100%;height:100%;display:block;background:radial-gradient(1200px 600px at 20% 20%,#1a1410,#0d0a08 60%);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
   .overlay{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;background:linear-gradient(180deg,rgba(0,0,0,.65),rgba(0,0,0,.35));z-index:2}
   .card{background:#111;border:1px solid #3a2d1a;border-radius:16px;padding:18px;max-width:760px}
+  footer{padding:10px 16px env(safe-area-inset-bottom);color:#cbb48b;font-size:14px;border-top:1px solid #2b2b2b}
+  /* toasts + bulles */
   .toasts{position:fixed;inset:auto 0 10px 0;display:grid;place-items:center;gap:8px;pointer-events:none;z-index:5}
-  .toast{background:#222;border:1px solid #3a2d1a;color:#fff;padding:10px 14px;border-radius:12px}
+  .toast{background:#222;border:1px solid #3a2d1a;color:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+  .bubble{position:absolute;max-width:220px;background:#222;border:1px solid #3a2d1a;color:#fff;padding:8px 10px;border-radius:10px;font-size:14px}
+  /* quiz modal */
+  .modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.55);z-index:6}
+  .modal .popup{background:#121212;border:1px solid #3a2d1a;border-radius:14px;max-width:420px;padding:16px}
+  .popup h3{margin:0 0 10px 0}
+  .popup .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;border-radius:10px;border:1px solid #3a2d1a;background:#1a1a1a;color:#fff}
+  .flowers{position:fixed;inset:0;pointer-events:none;z-index:4}
+  .flower{position:absolute;animation:fall 1.6s ease-in forwards;font-size:24px}
+  @keyframes fall{from{transform:translateY(-10vh) rotate(0);opacity:0}to{transform:translateY(110vh) rotate(180deg);opacity:1}}
 </style>
-</head><body>
+</head>
+<body>
 <div class="wrap">
   <header>
     <img class="label" src="4A20A11D-FFE4-40F0-B5C8-41535E58C891.jpeg" alt="Étiquette Bürchen">
-    <div class="title"><h1>Attrape-Abeilles <span style="color:#c69a57">Bürchen</span> 🐝🍯</h1><p>Avec David, apiculteur en Valais.</p></div>
+    <div class="title">
+      <h1>Attrape-Abeilles <span style="color:#c69a57">Bürchen</span> 🐝🍯</h1>
+      <p>Avec David, apiculteur en Valais. (mode facile + surprises)</p>
+    </div>
     <div class="avatar"><img src="999BE385-AE83-4F5F-8B9E-D1371F104F83.jpeg" alt="David"></div>
   </header>
 
   <div class="hud">
     <div class="pill">Score : <span id="score">0</span></div>
-    <div class="pill">Combo : <span id="combo">x1</span></div>
-    <div class="pill">Temps : <span id="time">60</span>s</div>
+    <div class="pill">Combo : <span id="combo">x1 / série 0</span></div>
+    <div class="pill">Temps : <span id="time">90</span>s</div>
     <button class="btn" id="startBtn">▶️ Jouer / Rejouer</button>
     <button class="btn alt" id="pauseBtn">⏸️ Pause</button>
     <button class="btn" id="smokeBtn">💨 Fumée</button>
@@ -40,53 +58,243 @@
 
   <div class="canvasWrap">
     <canvas id="game"></canvas>
-    <div class="overlay" id="splash" hidden><div class="card">
-      <h2>Bienvenue 🧑‍🌾</h2><p>Attrape un max d’abeilles. Double-tap = fumée calmante.</p>
-      <button class="btn" id="startBtn2">🍯 Commencer</button></div></div>
-    <div class="overlay" id="gameOver" hidden><div class="card">
-      <h2 id="endTitle">Fin de partie</h2><p id="endMsg"></p>
-      <button class="btn" id="restartBtn">🔁 Rejouer</button></div></div>
+
+    <div class="overlay" id="splash">
+      <div class="card">
+        <h2>Bienvenue 🧑‍🌾</h2>
+        <p>Attrape un max d’abeilles avec le pot de miel artisanal <strong>Bürchen</strong>.<br>
+        <small>Mobile-friendly, blagues, <em>facts</em> & petits quiz. Premier tap = démarrage.</small></p>
+        <ul style="text-align:left;max-width:640px;margin:12px auto;line-height:1.6">
+          <li><b>Contrôles :</b> touche ou déplace le doigt. Le pot suit.</li>
+          <li><b>Abeille</b> = +10 • <b>Reine</b> = +50 • <b>Guêpe</b> = −10 (plus cool).</li>
+          <li><b>Combo doré :</b> 3 captures d’affilée → points doublés 8s.</li>
+          <li><b>Fumée :</b> bouton 💨 (ou double-tap) calme les insectes 6s.</li>
+        </ul>
+        <button class="btn" id="startBtn2">🍯 Commencer</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="gameOver" hidden>
+      <div class="card">
+        <h2 id="endTitle">Fin de partie</h2>
+        <p id="endMsg"></p>
+        <button class="btn" id="restartBtn">🔁 Rejouer</button>
+      </div>
+    </div>
   </div>
 
-  <footer style="padding:10px 16px;color:#cbb48b;border-top:1px solid #2b2b2b">Version GitHub Pages.</footer>
+  <footer>Édition David (en Valais) • surprises drôles + mini-quiz pour apprendre en jouant.</footer>
 </div>
+
 <div class="toasts" id="toasts"></div>
+<div class="flowers" id="flowers"></div>
+
+<!-- QUIZ -->
+<div class="modal" id="quiz">
+  <div class="popup">
+    <h3 id="qTitle">Quiz éclair 🐝</h3>
+    <p id="qText">Question…</p>
+    <button class="opt" id="qA"></button>
+    <button class="opt" id="qB"></button>
+    <button class="opt" id="qC"></button>
+    <p id="qResult" style="display:none;margin-top:8px;color:#cbb48b"></p>
+  </div>
+</div>
 
 <script>
-(()=>{const C=document.getElementById('game'),X=C.getContext('2d');let W=1280,H=720;function rsz(){const dpr=Math.min(devicePixelRatio||1,2);W=C.clientWidth;H=C.clientHeight;C.width=Math.floor(W*dpr);C.height=Math.floor(H*dpr);X.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',rsz,{passive:!0});rsz();
-const splash=document.getElementById('splash'),over=document.getElementById('gameOver');
-const s1=document.getElementById('startBtn'),s2=document.getElementById('startBtn2'),r=document.getElementById('restartBtn'),p=document.getElementById('pauseBtn'),sm=document.getElementById('smokeBtn');
-const scoreEl=document.getElementById('score'),comboEl=document.getElementById('combo'),timeEl=document.getElementById('time'),toasts=document.getElementById('toasts');
-const label=new Image();label.src="4A20A11D-FFE4-40F0-B5C8-41535E58C891.jpeg";
+(()=>{ // ===== JEU =====
+  const C = document.getElementById('game');
+  const X = C.getContext('2d');
+  const splash = document.getElementById('splash');
+  const over = document.getElementById('gameOver');
+  const bStart=document.getElementById('startBtn'), bStart2=document.getElementById('startBtn2'), bRe=document.getElementById('restartBtn');
+  const bPause=document.getElementById('pauseBtn'), bSmoke=document.getElementById('smokeBtn');
+  const scoreEl=document.getElementById('score'), comboEl=document.getElementById('combo'), timeEl=document.getElementById('time');
+  const toasts = document.getElementById('toasts');
+  const flowers = document.getElementById('flowers');
+  const quizEl = document.getElementById('quiz');
+  const qTitle = document.getElementById('qTitle'), qText = document.getElementById('qText');
+  const qA = document.getElementById('qA'), qB = document.getElementById('qB'), qC = document.getElementById('qC'), qRes = document.getElementById('qResult');
 
-const ptr={x:W/2,y:H/2,last:0};function setPtr(e){const b=C.getBoundingClientRect();if(e.touches&&e.touches[0]){ptr.x=e.touches[0].clientX-b.left;ptr.y=e.touches[0].clientY-b.top}else if(e.clientX!=null){ptr.x=e.clientX-b.left;ptr.y=e.clientY-b.top}}
-C.addEventListener('mousemove',setPtr);C.addEventListener('touchstart',e=>{setPtr(e);const n=performance.now();if(n-ptr.last<300)smoke=4;ptr.last=n},{passive:!0});C.addEventListener('touchmove',setPtr,{passive:!0});
+  // images
+  const label = new Image(); label.src = "4A20A11D-FFE4-40F0-B5C8-41535E58C891.jpeg";
 
-let run=false,pause=false,t0=0,timer=60,score=0,combo=0,ct=0,golden=0,smoke=0,ents=[],pot={x:W/2,y:H/2};
-const MAXB=12,MAXW=3;function toast(m){const d=document.createElement('div');d.className='toast';d.textContent=m;toasts.appendChild(d);setTimeout(()=>d.remove(),1700)}
-function reset(){score=0;combo=0;ct=0;golden=0;smoke=0;timer=60;ents=[];for(let i=0;i<MAXB;i++)spawnB(Math.random()<.08);for(let i=0;i<MAXW;i++)if(Math.random()<.6)spawnW();pot.x=W/2;pot.y=H/2;hud()}
-function spawnB(q=false){const s=Math.floor(Math.random()*4),m=30;ents.push({t:q?'Q':'B',x:s==0?-m:s==1?W+m:Math.random()*W,y:s==2?-m:s==3?H+m:Math.random()*H,vx:0,vy:0,spd:(.6+Math.random())*(q?.9:1),r:q?12:8,sw:Math.random()*6.28})}
-function spawnW(){ents.push({t:'W',x:Math.random()*W,y:Math.random()*H,vx:0,vy:0,spd:1.2+Math.random(),r:10,sw:Math.random()*6.28})}
-function hud(){comboEl.textContent=`x${golden>0?2:1} / série ${combo}${smoke>0?' • 💨':''}`;scoreEl.textContent=score;timeEl.textContent=Math.ceil(timer)}
-function att(ax,ay,bx,by,s){let dx=ax-bx,dy=ay-by,d2=dx*dx+dy*dy,d=Math.sqrt(d2)||.0001,f=Math.max(-.08,Math.min(.08,s/d2));return{fx:dx/d*f,fy:dy/d*f,d}}
-function jar(){const r=60;X.save();X.translate(pot.x,pot.y);X.beginPath();X.moveTo(-r*.6,-r*.6);X.quadraticCurveTo(-r*.9,r*.2,-r*.5,r*.9);X.quadraticCurveTo(0,r*1.2,r*.5,r*.9);X.quadraticCurveTo(r*.9,r*.2,r*.6,-r*.6);X.closePath();X.fillStyle='#2b2116';X.fill();X.lineWidth=2;X.strokeStyle='#6c512c';X.stroke();X.drawImage(label,-43,-56,86,112);X.globalAlpha=.45;X.beginPath();X.arc(0,10,70,0,6.28);X.fillStyle=golden>0?'#ffd777':'#c69a57';X.fill();X.globalAlpha=1;X.restore()}
-function bee(b){X.save();X.translate(b.x,b.y);X.beginPath();X.fillStyle=b.t=='Q'?'#ffd777':'#e6c15e';X.ellipse(0,0,b.r+2,b.r,0,0,6.28);X.fill();X.lineWidth=2;X.strokeStyle='#2b2116';X.beginPath();X.moveTo(-b.r,-2);X.lineTo(b.r,-2);X.moveTo(-b.r,2);X.lineTo(b.r,2);X.stroke();X.restore()}
-function wasp(w){X.save();X.translate(w.x,w.y);X.beginPath();X.fillStyle='#ff5858';X.ellipse(0,0,w.r+2,w.r,0,0,6.28);X.fill();X.restore()}
-function step(dt){const ez=Math.min(1,dt*6);pot.x+=(ptr.x-pot.x)*ez;pot.y+=(ptr.y-pot.y)*ez;const AS=2500;
-  for(let i=ents.length-1;i>=0;i--){const e=ents[i];e.sw+=dt*(.5+Math.random()*.7);e.vx+=Math.cos(e.sw)*.05;e.vy+=Math.sin(e.sw)*.05;
-    if(e.t!='W'){const sl=smoke>0?.6:1;const {fx,fy,d}=att(pot.x,pot.y,e.x,e.y,AS*sl);e.vx+=fx;e.vy+=fy;const cap=2.4*e.spd*sl;e.vx=Math.max(-cap,Math.min(cap,e.vx));e.vy=Math.max(-cap,Math.min(cap,e.vy));e.x+=e.vx;e.y+=e.vy;
-      if(d<60){score+=(e.t=='Q'?50:10)*(golden>0?2:1);combo++;ct=2.5;if(combo%5==0){golden=10;toast('Miel doré ✨')}ents.splice(i,1);spawnB(Math.random()<.08);continue}}
-    else{const sl=smoke>0?.5:1;const {fx,fy}=att(e.x,e.y,pot.x,pot.y,3500*sl);e.vx+=fx;e.vy+=fy;const cap=2.6*e.spd*sl;e.vx=Math.max(-cap,Math.min(cap,e.vx));e.vy=Math.max(-cap,Math.min(cap,e.vy));e.x+=e.vx;e.y+=e.vy;
-      if(Math.hypot(e.x-pot.x,e.y-pot.y)<54){score=Math.max(0,score-20);combo=0;ct=0;}}
-    if(e.x<-20)e.x=W+20;if(e.x>W+20)e.x=-20;if(e.y<-20)e.y=H+20;if(e.y>H+20)e.y=-20}
-  timer-=dt;if(timer<=0){run=false;over.hidden=false;document.getElementById('endMsg').textContent='Score : '+score;return}
-  if(ct>0){ct-=dt;if(ct<=0)combo=0} if(golden>0)golden-=dt; if(smoke>0)smoke-=dt; hud()}
-function render(){X.clearRect(0,0,W,H);X.globalAlpha=.25;for(let i=0;i<W;i+=64){X.beginPath();X.moveTo(i,0);X.lineTo(i,H);X.strokeStyle='#251d14';X.stroke()}for(let j=0;j<H;j+=64){X.beginPath();X.moveTo(0,j);X.lineTo(W,j);X.strokeStyle='#251d14';X.stroke()}X.globalAlpha=1;for(const e of ents){(e.t=='W')?wasp(e):bee(e)}jar()}
-function loop(t){if(!run)return;if(!pause){const dt=Math.min(.033,(t-t0)/1000);t0=t;step(dt);render()}requestAnimationFrame(loop)}
-function start(){reset();run=true;pause=false;t0=performance.now();splash.hidden=true;over.hidden=true;requestAnimationFrame(loop)}
-function toggle(){if(!run)return;pause=!pause;document.getElementById('pauseBtn').textContent=pause?'▶️ Reprendre':'⏸️ Pause'}
-document.getElementById('smokeBtn').onclick=()=>smoke=4;
-document.getElementById('startBtn').onclick=start; if(s2) s2.onclick=start; if(r) r.onclick=start; document.getElementById('pauseBtn').onclick=toggle;
-splash.hidden=false;})();
+  // layout
+  let W=1280,H=720;
+  function rsz(){ const dpr=Math.min(devicePixelRatio||1,2); W=C.clientWidth; H=C.clientHeight;
+    C.width=Math.floor(W*dpr); C.height=Math.floor(H*dpr); X.setTransform(dpr,0,0,dpr,0,0); }
+  addEventListener('resize', rsz, {passive:true}); rsz();
+
+  // inputs
+  const ptr={x:W/2,y:H/2,last:0};
+  function setPtr(e){ const b=C.getBoundingClientRect();
+    if(e.touches && e.touches[0]){ ptr.x=e.touches[0].clientX-b.left; ptr.y=e.touches[0].clientY-b.top; }
+    else if(e.clientX!=null){ ptr.x=e.clientX-b.left; ptr.y=e.clientY-b.top; } }
+  C.addEventListener('mousemove', setPtr);
+  C.addEventListener('touchstart', (e)=>{ setPtr(e); const n=performance.now(); if(n-ptr.last<300) puff(); ptr.last=n; }, {passive:true});
+  C.addEventListener('touchmove', setPtr, {passive:true});
+
+  // state
+  let run=false, pause=false, t0=0, timer=90;
+  let score=0, serie=0, serieTimer=0, golden=0, smoke=0;
+  let ents=[], pot={x:W/2,y:H/2};
+  const MAX_BEES=10, MAX_WASPS=1; // facile
+  let nextFactAt = 8, nextQuizAt = 18;
+
+  // facts & jokes
+  const FACTS = [
+    "Une abeille visite ~50 fleurs par trajet. Marathon avec escales 🌸",
+    "La fumée calme les abeilles : elles se gorgent de miel (plan évacuation).",
+    "80% des plantes à fleurs dépendent des pollinisateurs, abeilles en tête.",
+    "La reine peut pondre jusqu’à 2'000 œufs/jour en saison. Respect 👑",
+    "Planter des fleurs locales aide vraiment les colonies (et c’est joli).",
+  ];
+  const JOKES = [
+    "“Je peigne mes cheveux et mes ruches.” — David",
+    "Une tartine en Valais ? Si tu fais +500 pts 😉",
+    "Guêpe jalouse repérée. On reste dignes.",
+    "Buzz…iness as usual.",
+    "J’ai le seum… de pollen.",
+  ];
+
+  // quiz bank
+  const QUIZZES = [
+    {q:"Pourquoi l’apiculteur utilise-t-il la fumée ?", a:["Pour calmer les abeilles","Pour les faire danser","Pour cuire des crêpes"], ok:0,
+     exp:"La fumée masque les phéromones d’alarme et pousse les abeilles à se gaver de miel, donc elles sont plus calmes."},
+    {q:"Quelle période aide le plus les abeilles au jardin ?", a:["Toute l’année (fleurs étalées)","Seulement l’été","Uniquement à Noël"], ok:0,
+     exp:"Avoir des floraisons étalées de printemps à automne fournit nectar et pollen régulièrement."},
+    {q:"Qui pique généralement ?", a:["Ouvrière","Reine","Mâle (faux-bourdon)"], ok:0,
+     exp:"La reine pique rarement, le faux-bourdon n’a pas de dard. Les ouvrières défendent la ruche."}
+  ];
+  function randItem(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+  // helpers
+  function toast(msg){ const d=document.createElement('div'); d.className='toast'; d.textContent=msg; toasts.appendChild(d);
+    setTimeout(()=>{ d.style.opacity='0'; d.style.transform='translateY(-6px)'; }, 1500);
+    setTimeout(()=>d.remove(), 2000); }
+
+  function bubble(x,y,text){ const el=document.createElement('div'); el.className='bubble'; el.textContent=text;
+    document.body.appendChild(el); const r=C.getBoundingClientRect(); el.style.left=(r.left+x-20)+'px'; el.style.top=(r.top+y-60)+'px';
+    setTimeout(()=>{el.remove()},1600); }
+
+  function emojiRain(){ // petite pluie d’emoji
+    const EMO=["🌼","🌸","🌻","🐝","🍯"]; for(let i=0;i<16;i++){ const f=document.createElement('div'); f.className='flower';
+      f.textContent=randItem(EMO); f.style.left=Math.floor(Math.random()*100)+"vw"; f.style.fontSize=(16+Math.random()*20)+"px";
+      f.style.animationDelay=(Math.random()*0.3)+"s"; flowers.appendChild(f); setTimeout(()=>f.remove(),1700); } }
+
+  function hud(){ comboEl.textContent=`x${golden>0?2:1} / série ${serie}${smoke>0?' • 💨':''}`;
+    scoreEl.textContent=score; timeEl.textContent=Math.ceil(timer); }
+
+  function reset(){
+    score=0; serie=0; serieTimer=0; golden=0; smoke=0; timer=90; ents=[];
+    for(let i=0;i<MAX_BEES;i++) spawnBee(Math.random()<.12);
+    for(let i=0;i<MAX_WASPS;i++) if(Math.random()<.5) spawnWasp();
+    pot.x=W/2; pot.y=H/2; nextFactAt=8; nextQuizAt=18; hud();
+  }
+
+  function spawnBee(queen=false){
+    const side=Math.floor(Math.random()*4), m=30;
+    ents.push({t:queen?'Q':'B', x: side==0?-m : side==1?W+m : Math.random()*W,
+               y: side==2?-m : side==3?H+m : Math.random()*H,
+               vx:0, vy:0, spd:(.5+Math.random())*(queen?.85:1), r: queen?14:10, sw: Math.random()*6.28});
+  }
+  function spawnWasp(){
+    ents.push({t:'W', x:Math.random()*W, y:Math.random()*H, vx:0, vy:0, spd:1.0+Math.random()*0.6, r:11, sw:Math.random()*6.28});
+  }
+
+  function attract(ax,ay,bx,by,str){ let dx=ax-bx, dy=ay-by, d2=dx*dx+dy*dy, d=Math.sqrt(d2)||.0001;
+    let f=Math.max(-.08,Math.min(.08,str/d2)); return {fx:dx/d*f, fy:dy/d*f, d}; }
+
+  function drawJar(){
+    const r=60; X.save(); X.translate(pot.x,pot.y);
+    X.beginPath(); X.moveTo(-r*.6,-r*.6); X.quadraticCurveTo(-r*.9,r*.2,-r*.5,r*.9);
+    X.quadraticCurveTo(0,r*1.2,r*.5,r*.9); X.quadraticCurveTo(r*.9,r*.2,r*.6,-r*.6); X.closePath();
+    X.fillStyle='#2b2116'; X.fill(); X.lineWidth=2; X.strokeStyle='#6c512c'; X.stroke();
+    X.drawImage(label,-43,-56,86,112);
+    X.globalAlpha=.45; X.beginPath(); X.arc(0,10,70,0,Math.PI*2); X.fillStyle=golden>0?'#ffd777':'#c69a57'; X.fill(); X.globalAlpha=1;
+    X.restore();
+  }
+  function drawBee(b){ X.save(); X.translate(b.x,b.y);
+    X.beginPath(); X.fillStyle=b.t=='Q'?'#ffd777':'#e6c15e'; X.ellipse(0,0,b.r+2,b.r,0,0,Math.PI*2); X.fill();
+    X.lineWidth=2; X.strokeStyle='#2b2116'; X.beginPath(); X.moveTo(-b.r,-2); X.lineTo(b.r,-2); X.moveTo(-b.r,2); X.lineTo(b.r,2); X.stroke();
+    X.restore(); }
+  function drawWasp(w){ X.save(); X.translate(w.x,w.y); X.beginPath(); X.fillStyle='#ff5858'; X.ellipse(0,0,w.r+2,w.r,0,0,Math.PI*2); X.fill(); X.restore(); }
+  function grid(){ X.globalAlpha=.25; for(let i=0;i<W;i+=64){ X.beginPath(); X.moveTo(i,0); X.lineTo(i,H); X.strokeStyle='#251d14'; X.stroke(); }
+    for(let j=0;j<H;j+=64){ X.beginPath(); X.moveTo(0,j); X.lineTo(W,j); X.strokeStyle='#251d14'; X.stroke(); } X.globalAlpha=1; }
+
+  function step(dt){
+    // progress & events
+    nextFactAt -= dt; nextQuizAt -= dt;
+    if(nextFactAt<=0){ toast("ℹ️ "+randItem(FACTS)); nextFactAt = 10+Math.random()*6; }
+    if(nextQuizAt<=0){ openQuiz(); nextQuizAt = 24+Math.random()*8; }
+
+    const ez=Math.min(1, dt*6); pot.x += (ptr.x-pot.x)*ez; pot.y += (ptr.y-pot.y)*ez;
+    const AS=3400; // attraction forte (facile)
+    for(let i=ents.length-1;i>=0;i--){
+      const e=ents[i]; e.sw+=dt*(.4+Math.random()*.6); e.vx+=Math.cos(e.sw)*.04; e.vy+=Math.sin(e.sw)*.04;
+      if(e.t!='W'){
+        const sl=smoke>0?.6:1; const {fx,fy,d}=attract(pot.x,pot.y,e.x,e.y,AS*sl);
+        e.vx+=fx; e.vy+=fy; const cap=2.1*e.spd*sl; e.vx=Math.max(-cap,Math.min(cap,e.vx)); e.vy=Math.max(-cap,Math.min(cap,e.vy));
+        e.x+=e.vx; e.y+=e.vy;
+        const CATCH=90; if(d<CATCH){
+          const base=(e.t=='Q'?50:10), mult=(golden>0?2:1);
+          score += base*mult; serie++; serieTimer=3.0;
+          if(serie%3==0){ golden = 8; toast("✨ Miel doré : points x2 !"); if(Math.random()<.4) emojiRain(); }
+          if(Math.random()<.18) bubble(e.x,e.y, randItem(JOKES));
+          ents.splice(i,1); spawnBee(Math.random()<.1); continue;
+        }
+      } else {
+        const sl=smoke>0?.5:1; const {fx,fy}=attract(e.x,e.y,pot.x,pot.y,3000*sl);
+        e.vx+=fx; e.vy+=fy; const cap=2.2*e.spd*sl; e.vx=Math.max(-cap,Math.min(cap,e.vx)); e.vy=Math.max(-cap,Math.min(cap,e.vy));
+        e.x+=e.vx; e.y+=e.vy;
+        if(Math.hypot(e.x-pot.x,e.y-pot.y)<58){ score=Math.max(0,score-10); serie=0; serieTimer=0; toast("Aïe ! Guêpe un peu susceptible 🐝"); }
+      }
+      // wrap
+      if(e.x<-20)e.x=W+20; if(e.x>W+20)e.x=-20; if(e.y<-20)e.y=H+20; if(e.y>H+20)e.y=-20;
+    }
+
+    timer -= dt; if(timer<=0){ run=false; over.hidden=false; document.getElementById('endMsg').textContent=`Score : ${score}`; }
+    if(serieTimer>0){ serieTimer -= dt; if(serieTimer<=0) serie=0; }
+    if(golden>0) golden -= dt; if(smoke>0) smoke -= dt;
+    hud();
+  }
+
+  function render(){ X.clearRect(0,0,W,H); grid(); for(const e of ents){ (e.t=='W') ? drawWasp(e) : drawBee(e); } drawJar(); }
+
+  function loop(t){ if(!run) return; if(!pause){ const dt=Math.min(.033,(t-t0)/1000); t0=t; step(dt); render(); } requestAnimationFrame(loop); }
+
+  function start(){ reset(); run=true; pause=false; t0=performance.now(); splash.hidden=true; over.hidden=true; requestAnimationFrame(loop); }
+  function toggle(){ if(!run)return; pause=!pause; bPause.textContent = pause?'▶️ Reprendre':'⏸️ Pause'; }
+  function puff(){ smoke = Math.max(smoke,6); toast("💨 “Tout doux les copines.” — David"); }
+
+  // démarrage au premier tap n'importe où
+  let armed=true; window.addEventListener('pointerdown',()=>{ if(armed){ armed=false; start(); } }, {once:true, passive:true});
+  // boutons
+  bStart.onclick=start; bStart2 && (bStart2.onclick=start); bRe && (bRe.onclick=start);
+  bPause.onclick=toggle; bSmoke.onclick=puff;
+
+  // ==== QUIZ ====
+  let currentQuiz=null;
+  function openQuiz(){
+    if(!run) return;
+    currentQuiz = randItem(QUIZZES);
+    qTitle.textContent = "Quiz éclair 🐝 +50 pts / +10s si juste";
+    qText.textContent = currentQuiz.q; qRes.style.display='none';
+    [qA,qB,qC].forEach((btn,i)=>{ btn.textContent = currentQuiz.a[i]; btn.disabled=false; btn.onclick=()=>answer(i); });
+    quizEl.style.display='grid'; pause=true;
+  }
+  function answer(i){
+    [qA,qB,qC].forEach(b=>b.disabled=true);
+    const ok = (i===currentQuiz.ok);
+    if(ok){ score += 50; timer += 10; toast("✅ Bonne réponse ! +50 pts +10s"); }
+    else { toast("❌ Oups — pas grave !"); }
+    qRes.textContent = currentQuiz.exp; qRes.style.display='block';
+    setTimeout(()=>{ quizEl.style.display='none'; pause=false; }, 1600);
+  }
+
+  // init
+  splash.hidden=false; over.hidden=true; hud();
+})();
 </script>
-</body></html>
+</body>
+</html>
