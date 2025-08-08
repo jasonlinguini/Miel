@@ -1,108 +1,5 @@
-<!doctype html>
-<html lang="fr">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Attrape-Abeilles Bürchen 🐝🍯 – Fun & Apprentissage</title>
-<style>
-  :root{--gold:#c69a57;--ink:#111;--bg:#0e0e0e;--border:#2b2b2b}
-  html,body{height:100%;margin:0;background:var(--bg);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-  .wrap{display:grid;grid-template-rows:auto auto 1fr auto;gap:10px;min-height:100dvh}
-  header{padding:max(10px,env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#111;border-bottom:1px solid var(--border)}
-  .label{width:60px;height:60px;object-fit:cover;border-radius:8px;border:1px solid #6c512c}
-  .title h1{margin:0 0 4px 0;font-size:clamp(18px,4.5vw,30px)} .title p{margin:0;color:#cbb48b}
-  .avatar{width:40px;height:40px;border-radius:50%;overflow:hidden;border:1px solid #3a2d1a}
-  .avatar img{width:100%;height:100%;object-fit:cover}
-  .hud{display:flex;align-items:center;gap:10px;padding:6px 16px;flex-wrap:wrap}
-  .pill{background:#1a1a1a;border:1px solid #3a2d1a;border-radius:999px;padding:7px 12px;font-weight:700}
-  .btn{cursor:pointer;background:var(--gold);color:var(--ink);border:none;border-radius:12px;padding:11px 14px;font-weight:800}
-  .btn.alt{background:#1a1a1a;color:#fff;border:1px solid #3a2d1a}
-  .canvasWrap{position:relative;width:100%;height:calc(100dvh - 300px);min-height:320px;touch-action:none}
-  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;background:radial-gradient(1200px 600px at 20% 20%,#1a1410,#0d0a08 60%);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
-  .overlay{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;background:linear-gradient(180deg,rgba(0,0,0,.65),rgba(0,0,0,.35));z-index:2}
-  .card{background:#111;border:1px solid #3a2d1a;border-radius:16px;padding:18px;max-width:760px}
-  footer{padding:10px 16px env(safe-area-inset-bottom);color:#cbb48b;font-size:14px;border-top:1px solid #2b2b2b}
-  /* toasts + bulles */
-  .toasts{position:fixed;inset:auto 0 10px 0;display:grid;place-items:center;gap:8px;pointer-events:none;z-index:5}
-  .toast{background:#222;border:1px solid #3a2d1a;color:#fff;padding:10px 14px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.4)}
-  .bubble{position:absolute;max-width:220px;background:#222;border:1px solid #3a2d1a;color:#fff;padding:8px 10px;border-radius:10px;font-size:14px}
-  /* quiz modal */
-  .modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.55);z-index:6}
-  .modal .popup{background:#121212;border:1px solid #3a2d1a;border-radius:14px;max-width:420px;padding:16px}
-  .popup h3{margin:0 0 10px 0}
-  .popup .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;border-radius:10px;border:1px solid #3a2d1a;background:#1a1a1a;color:#fff}
-  .flowers{position:fixed;inset:0;pointer-events:none;z-index:4}
-  .flower{position:absolute;animation:fall 1.6s ease-in forwards;font-size:24px}
-  @keyframes fall{from{transform:translateY(-10vh) rotate(0);opacity:0}to{transform:translateY(110vh) rotate(180deg);opacity:1}}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <img class="label" src="4A20A11D-FFE4-40F0-B5C8-41535E58C891.jpeg" alt="Étiquette Bürchen">
-    <div class="title">
-      <h1>Attrape-Abeilles <span style="color:#c69a57">Bürchen</span> 🐝🍯</h1>
-      <p>Avec David, apiculteur en Valais. (mode facile + surprises)</p>
-    </div>
-    <div class="avatar"><img src="999BE385-AE83-4F5F-8B9E-D1371F104F83.jpeg" alt="David"></div>
-  </header>
-
-  <div class="hud">
-    <div class="pill">Score : <span id="score">0</span></div>
-    <div class="pill">Combo : <span id="combo">x1 / série 0</span></div>
-    <div class="pill">Temps : <span id="time">90</span>s</div>
-    <button class="btn" id="startBtn">▶️ Jouer / Rejouer</button>
-    <button class="btn alt" id="pauseBtn">⏸️ Pause</button>
-    <button class="btn" id="smokeBtn">💨 Fumée</button>
-  </div>
-
-  <div class="canvasWrap">
-    <canvas id="game"></canvas>
-
-    <div class="overlay" id="splash">
-      <div class="card">
-        <h2>Bienvenue 🧑‍🌾</h2>
-        <p>Attrape un max d’abeilles avec le pot de miel artisanal <strong>Bürchen</strong>.<br>
-        <small>Mobile-friendly, blagues, <em>facts</em> & petits quiz. Premier tap = démarrage.</small></p>
-        <ul style="text-align:left;max-width:640px;margin:12px auto;line-height:1.6">
-          <li><b>Contrôles :</b> touche ou déplace le doigt. Le pot suit.</li>
-          <li><b>Abeille</b> = +10 • <b>Reine</b> = +50 • <b>Guêpe</b> = −10 (plus cool).</li>
-          <li><b>Combo doré :</b> 3 captures d’affilée → points doublés 8s.</li>
-          <li><b>Fumée :</b> bouton 💨 (ou double-tap) calme les insectes 6s.</li>
-        </ul>
-        <button class="btn" id="startBtn2">🍯 Commencer</button>
-      </div>
-    </div>
-
-    <div class="overlay" id="gameOver" hidden>
-      <div class="card">
-        <h2 id="endTitle">Fin de partie</h2>
-        <p id="endMsg"></p>
-        <button class="btn" id="restartBtn">🔁 Rejouer</button>
-      </div>
-    </div>
-  </div>
-
-  <footer>Édition David (en Valais) • surprises drôles + mini-quiz pour apprendre en jouant.</footer>
-</div>
-
-<div class="toasts" id="toasts"></div>
-<div class="flowers" id="flowers"></div>
-
-<!-- QUIZ -->
-<div class="modal" id="quiz">
-  <div class="popup">
-    <h3 id="qTitle">Quiz éclair 🐝</h3>
-    <p id="qText">Question…</p>
-    <button class="opt" id="qA"></button>
-    <button class="opt" id="qB"></button>
-    <button class="opt" id="qC"></button>
-    <p id="qResult" style="display:none;margin-top:8px;color:#cbb48b"></p>
-  </div>
-</div>
-
 <script>
-(()=>{ // ===== JEU =====
+(()=>{ // ===== JEU PATCH ANTISPAM =====
   const C = document.getElementById('game');
   const X = C.getContext('2d');
   const splash = document.getElementById('splash');
@@ -143,44 +40,52 @@
 
   // facts & jokes
   const FACTS = [
-    "Une abeille visite ~50 fleurs par trajet. Marathon avec escales 🌸",
-    "La fumée calme les abeilles : elles se gorgent de miel (plan évacuation).",
-    "80% des plantes à fleurs dépendent des pollinisateurs, abeilles en tête.",
-    "La reine peut pondre jusqu’à 2'000 œufs/jour en saison. Respect 👑",
-    "Planter des fleurs locales aide vraiment les colonies (et c’est joli).",
+    "Une abeille visite ~50 fleurs par trajet 🌸",
+    "La fumée masque l’alarme : abeilles plus calmes.",
+    "80% des plantes à fleurs ont besoin des pollinisateurs.",
+    "La reine pond jusqu’à 2’000 œufs/jour 👑",
+    "Plante des fleurs locales : nectar régulier !",
   ];
   const JOKES = [
     "“Je peigne mes cheveux et mes ruches.” — David",
-    "Une tartine en Valais ? Si tu fais +500 pts 😉",
-    "Guêpe jalouse repérée. On reste dignes.",
+    "Tartine en Valais si +500 pts 😉",
+    "Guêpe jalouse repérée.",
     "Buzz…iness as usual.",
-    "J’ai le seum… de pollen.",
+    "Seum… de pollen.",
   ];
-
-  // quiz bank
   const QUIZZES = [
-    {q:"Pourquoi l’apiculteur utilise-t-il la fumée ?", a:["Pour calmer les abeilles","Pour les faire danser","Pour cuire des crêpes"], ok:0,
-     exp:"La fumée masque les phéromones d’alarme et pousse les abeilles à se gaver de miel, donc elles sont plus calmes."},
-    {q:"Quelle période aide le plus les abeilles au jardin ?", a:["Toute l’année (fleurs étalées)","Seulement l’été","Uniquement à Noël"], ok:0,
-     exp:"Avoir des floraisons étalées de printemps à automne fournit nectar et pollen régulièrement."},
-    {q:"Qui pique généralement ?", a:["Ouvrière","Reine","Mâle (faux-bourdon)"], ok:0,
-     exp:"La reine pique rarement, le faux-bourdon n’a pas de dard. Les ouvrières défendent la ruche."}
+    {q:"Pourquoi la fumée ?", a:["Calmer les abeilles","Les faire danser","Cuire des crêpes"], ok:0,
+     exp:"Elle masque les phéromones d’alarme et les fait se gaver de miel."},
+    {q:"Le mieux au jardin :", a:["Fleurs étalées toute l’année","Seulement l’été","Noël"], ok:0,
+     exp:"Des floraisons étalées = nectar/pollen réguliers."},
+    {q:"Qui pique ?", a:["Ouvrière","Reine","Faux-bourdon"], ok:0,
+     exp:"Les ouvrières défendent la ruche. Le mâle n’a pas de dard."}
   ];
-  function randItem(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  function randItem(a){ return a[Math.floor(Math.random()*a.length)] }
 
-  // helpers
-  function toast(msg){ const d=document.createElement('div'); d.className='toast'; d.textContent=msg; toasts.appendChild(d);
-    setTimeout(()=>{ d.style.opacity='0'; d.style.transform='translateY(-6px)'; }, 1500);
-    setTimeout(()=>d.remove(), 2000); }
+  // === Anti-spam toasts ===
+  let lastToastAt = 0, lastToastMsg = "", activeToasts = 0;
+  function toast(msg){
+    const now = performance.now();
+    if (activeToasts >= 2) return;                // max 2 visibles
+    if (now - lastToastAt < 900 && msg===lastToastMsg) return; // délai + pas de doublon immédiat
+    lastToastAt = now; lastToastMsg = msg;
+    const d=document.createElement('div'); d.className='toast'; d.textContent=msg; toasts.appendChild(d);
+    activeToasts++;
+    setTimeout(()=>{ d.style.opacity='0'; d.style.transform='translateY(-6px)'; }, 1100);
+    setTimeout(()=>{ d.remove(); activeToasts=Math.max(0, activeToasts-1); }, 1500);
+  }
 
-  function bubble(x,y,text){ const el=document.createElement('div'); el.className='bubble'; el.textContent=text;
-    document.body.appendChild(el); const r=C.getBoundingClientRect(); el.style.left=(r.left+x-20)+'px'; el.style.top=(r.top+y-60)+'px';
-    setTimeout(()=>{el.remove()},1600); }
-
-  function emojiRain(){ // petite pluie d’emoji
-    const EMO=["🌼","🌸","🌻","🐝","🍯"]; for(let i=0;i<16;i++){ const f=document.createElement('div'); f.className='flower';
-      f.textContent=randItem(EMO); f.style.left=Math.floor(Math.random()*100)+"vw"; f.style.fontSize=(16+Math.random()*20)+"px";
-      f.style.animationDelay=(Math.random()*0.3)+"s"; flowers.appendChild(f); setTimeout(()=>f.remove(),1700); } }
+  // petite pluie d’emoji, cap à 1 par 2,5s
+  let lastRainAt = 0;
+  function emojiRain(){
+    const now = performance.now(); if (now - lastRainAt < 2500) return; lastRainAt = now;
+    const EMO=["🌼","🌸","🌻","🐝","🍯"];
+    for(let i=0;i<14;i++){ const f=document.createElement('div'); f.className='flower';
+      f.textContent=randItem(EMO); f.style.left=Math.floor(Math.random()*100)+"vw";
+      f.style.fontSize=(16+Math.random()*20)+"px"; f.style.animationDelay=(Math.random()*0.3)+"s";
+      flowers.appendChild(f); setTimeout(()=>f.remove(),1700); }
+  }
 
   function hud(){ comboEl.textContent=`x${golden>0?2:1} / série ${serie}${smoke>0?' • 💨':''}`;
     scoreEl.textContent=score; timeEl.textContent=Math.ceil(timer); }
@@ -199,7 +104,7 @@
                vx:0, vy:0, spd:(.5+Math.random())*(queen?.85:1), r: queen?14:10, sw: Math.random()*6.28});
   }
   function spawnWasp(){
-    ents.push({t:'W', x:Math.random()*W, y:Math.random()*H, vx:0, vy:0, spd:1.0+Math.random()*0.6, r:11, sw:Math.random()*6.28});
+    ents.push({t:'W', x:Math.random()*W, y:Math.random()*H, vx:0, vy:0, spd:1.0+Math.random()*0.6, r:11, sw:Math.random()*6.28, hitCD:0});
   }
 
   function attract(ax,ay,bx,by,str){ let dx=ax-bx, dy=ay-by, d2=dx*dx+dy*dy, d=Math.sqrt(d2)||.0001;
@@ -222,6 +127,8 @@
   function grid(){ X.globalAlpha=.25; for(let i=0;i<W;i+=64){ X.beginPath(); X.moveTo(i,0); X.lineTo(i,H); X.strokeStyle='#251d14'; X.stroke(); }
     for(let j=0;j<H;j+=64){ X.beginPath(); X.moveTo(0,j); X.lineTo(W,j); X.strokeStyle='#251d14'; X.stroke(); } X.globalAlpha=1; }
 
+  let goldenLockUntil = 0; // anti double miel doré
+
   function step(dt){
     // progress & events
     nextFactAt -= dt; nextQuizAt -= dt;
@@ -232,6 +139,7 @@
     const AS=3400; // attraction forte (facile)
     for(let i=ents.length-1;i>=0;i--){
       const e=ents[i]; e.sw+=dt*(.4+Math.random()*.6); e.vx+=Math.cos(e.sw)*.04; e.vy+=Math.sin(e.sw)*.04;
+
       if(e.t!='W'){
         const sl=smoke>0?.6:1; const {fx,fy,d}=attract(pot.x,pot.y,e.x,e.y,AS*sl);
         e.vx+=fx; e.vy+=fy; const cap=2.1*e.spd*sl; e.vx=Math.max(-cap,Math.min(cap,e.vx)); e.vy=Math.max(-cap,Math.min(cap,e.vy));
@@ -239,15 +147,19 @@
         const CATCH=90; if(d<CATCH){
           const base=(e.t=='Q'?50:10), mult=(golden>0?2:1);
           score += base*mult; serie++; serieTimer=3.0;
-          if(serie%3==0){ golden = 8; toast("✨ Miel doré : points x2 !"); if(Math.random()<.4) emojiRain(); }
-          if(Math.random()<.18) bubble(e.x,e.y, randItem(JOKES));
+          if(serie%3==0 && performance.now()>goldenLockUntil){ golden = 8; goldenLockUntil = performance.now()+500; toast("✨ Miel doré : points x2 !"); emojiRain(); }
+          if(Math.random()<.15) bubble(e.x,e.y, randItem(JOKES));
           ents.splice(i,1); spawnBee(Math.random()<.1); continue;
         }
       } else {
+        // WASP with cooldown
         const sl=smoke>0?.5:1; const {fx,fy}=attract(e.x,e.y,pot.x,pot.y,3000*sl);
         e.vx+=fx; e.vy+=fy; const cap=2.2*e.spd*sl; e.vx=Math.max(-cap,Math.min(cap,e.vx)); e.vy=Math.max(-cap,Math.min(cap,e.vy));
         e.x+=e.vx; e.y+=e.vy;
-        if(Math.hypot(e.x-pot.x,e.y-pot.y)<58){ score=Math.max(0,score-10); serie=0; serieTimer=0; toast("Aïe ! Guêpe un peu susceptible 🐝"); }
+        if(e.hitCD>0) e.hitCD -= dt;
+        if(e.hitCD<=0 && Math.hypot(e.x-pot.x,e.y-pot.y)<58){
+          score=Math.max(0,score-10); serie=0; serieTimer=0; e.hitCD = 0.8; toast("Aïe ! Guêpe un peu susceptible 🐝");
+        }
       }
       // wrap
       if(e.x<-20)e.x=W+20; if(e.x>W+20)e.x=-20; if(e.y<-20)e.y=H+20; if(e.y>H+20)e.y=-20;
@@ -269,6 +181,7 @@
 
   // démarrage au premier tap n'importe où
   let armed=true; window.addEventListener('pointerdown',()=>{ if(armed){ armed=false; start(); } }, {once:true, passive:true});
+
   // boutons
   bStart.onclick=start; bStart2 && (bStart2.onclick=start); bRe && (bRe.onclick=start);
   bPause.onclick=toggle; bSmoke.onclick=puff;
@@ -289,12 +202,10 @@
     if(ok){ score += 50; timer += 10; toast("✅ Bonne réponse ! +50 pts +10s"); }
     else { toast("❌ Oups — pas grave !"); }
     qRes.textContent = currentQuiz.exp; qRes.style.display='block';
-    setTimeout(()=>{ quizEl.style.display='none'; pause=false; }, 1600);
+    setTimeout(()=>{ quizEl.style.display='none'; pause=false; }, 1400);
   }
 
   // init
   splash.hidden=false; over.hidden=true; hud();
 })();
 </script>
-</body>
-</html>
