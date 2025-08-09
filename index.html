@@ -139,7 +139,7 @@
     }
   };
 
-  // ===== Pédago / anecdotes pool =====
+  // ===== Pédago / anecdotes =====
   let pool=[], poolIdx=0;
   let LANG=(navigator.language||'fr').startsWith('de')?'de':'fr';
   function buildPool(){
@@ -169,10 +169,10 @@
   hive.onload=()=>{hiveOK=true; layout();}; hive.onerror=layout;
   hive.src='719AC91B-EB0C-40B6-88AA-254CEA3F46CD.png';
 
-  // GIF abeille (nom avec espaces + & encodés)
+  // 👉 Nouveau GIF pour abeille + reine
   const beeGif=new Image(); let beeOK=false;
   beeGif.onload=()=>{beeOK=true;}; beeGif.onerror=()=>{beeOK=false;};
-  beeGif.src='-%20Find%20%26%20Share%20on%20GIPHY.gif';
+  beeGif.src='IMG_7646.gif';
 
   const jar=new Image(); let jarOK=false;
   jar.onload=()=>{jarOK=true;}; jar.onerror=()=>{jarOK=false;};
@@ -195,7 +195,7 @@
 
   // ===== État jeu =====
   let running=false, paused=false, timer=30, score=0, mult=1;
-  let gold=0, goldActive=false;   // patch anti-spam
+  let gold=0, goldActive=false;   // anti-spam
   let serie=0, serieTTL=0, smoke=0;
   const ptr={x:W/2,y:H/2,last:0}; let pot={x:W/2,y:H/2};
   let ents=[]; const MAX=14; let nextPauseAt=20;
@@ -204,7 +204,7 @@
   const scoreEl=$('score'), comboEl=$('combo'), timeEl=$('time'), toasts=$('toasts');
   function hud(){scoreEl.textContent=score; comboEl.textContent='x'+mult; timeEl.textContent=Math.ceil(timer);}
   function toast(m){
-    while(toasts.children.length>=3) toasts.removeChild(toasts.firstChild); // limite
+    while(toasts.children.length>=3) toasts.removeChild(toasts.firstChild);
     const d=document.createElement('div'); d.className='toast'; d.textContent=m; toasts.appendChild(d);
     setTimeout(()=>{d.style.opacity='0'; d.style.transform='translateY(-6px)';},1000);
     setTimeout(()=>d.remove(),1400);
@@ -245,19 +245,16 @@
 
   // Abeille / Reine = GIF
   function drawBee(b){
-    const sz = (b.t==='Q'? 34 : 28); // reine un poil plus grande
+    const sz = (b.t==='Q'? 36 : 30); // reine un peu plus grande
     X.save();
     X.translate(b.x,b.y);
-    X.rotate(Math.atan2(b.vy,b.vx)); // légère rotation vers la vitesse
+    X.rotate(Math.atan2(b.vy,b.vx));
     if(beeOK) X.drawImage(beeGif, -sz/2, -sz/2, sz, sz);
-    else { // fallback si GIF non chargé
-      X.fillStyle=(b.t==='Q')?'#ffe08f':'#e7c16a';
-      X.beginPath(); X.ellipse(0,0,(b.r+2),(b.r),0,0,6.283); X.fill();
-    }
+    else { X.fillStyle=(b.t==='Q')?'#ffe08f':'#e7c16a'; X.beginPath(); X.ellipse(0,0,(b.r+2),(b.r),0,0,6.283); X.fill(); }
     X.restore();
   }
 
-  // Guêpe dessin simple
+  // Guêpe (dessin simple)
   function drawWasp(w){ X.save(); X.translate(w.x,w.y); X.rotate(Math.atan2(w.vy,w.vx)); X.fillStyle='#ff7d7d'; X.beginPath(); X.ellipse(0,0,w.r+2,w.r,0,0,6.283); X.fill(); X.restore(); }
 
   function step(dt){
@@ -276,7 +273,7 @@
         if(a.d<80){
           score+=(e.t==='Q'?50:10)*mult;
           serie++; serieTTL=3;
-          if(serie%3===0 && !goldActive){ gold=6; goldActive=true; mult=2; toast(I18N[LANG].gold); } // anti-spam
+          if(serie%3===0 && !goldActive){ gold=6; goldActive=true; mult=2; toast(I18N[LANG].gold); }
           ents.splice(i,1); continue;
         }
       } else {
