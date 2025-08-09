@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Attrape-Abeilles – 30s (safe)</title>
+<title>Attrape-Abeilles / Bienenfänger — 30s (FR/DE)</title>
 <style>
   :root{--gold:#d7b06a;--line:#3a2d1a}
   html,body{margin:0;height:100%;background:#0d0a08;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
@@ -12,55 +12,66 @@
   .title{flex:1}
   .title h1{margin:0;font-size:20px}
   .title p{margin:2px 0 0;color:#e7d6b8}
+  .lang{display:flex;gap:6px}
+  .chip{background:#1a1a1a;border:1px solid var(--line);padding:6px 10px;border-radius:12px;cursor:pointer;font-weight:700}
+  .chip.active{background:var(--gold);color:#23180b}
   .hud{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:#101010;border-bottom:1px solid var(--line)}
   .pill{background:#171717;border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-weight:700}
   .btn{background:var(--gold);color:#23180b;border:none;border-radius:12px;padding:9px 14px;font-weight:800}
-  .wrap{position:relative;width:100%;height:calc(100dvh - 240px);min-height:360px;touch-action:none}
+  .wrap{position:relative;width:100%;height:calc(100dvh - 280px);min-height:360px;touch-action:none}
   canvas{position:absolute;inset:0;width:100%;height:100%;display:block;background:#0d0a08}
   .overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.45)}
   .card{background:#151515;border:1px solid var(--line);border-radius:14px;padding:16px;max-width:640px}
   .toasts{position:fixed;left:0;right:0;bottom:12px;display:grid;place-items:center;pointer-events:none}
   .toast{background:#222;border:1px solid var(--line);border-radius:10px;padding:8px 12px}
   .err{position:fixed;left:12px;right:12px;bottom:12px;background:#3b1a1a;border:1px solid #a33;border-radius:10px;padding:10px;font-size:13px;display:none;white-space:pre-wrap}
+  .facts{padding:10px 14px;border-bottom:1px solid var(--line);background:#0f0f0f;color:#f5e6c9}
 </style>
 </head>
 <body>
 <header>
-  <!-- On affiche aussi le PNG transparent en vignette -->
-  <img id="labelImg" class="label" src="IMG_7596.png" alt="Pot de miel">
+  <img id="labelImg" class="label" src="IMG_7596.png" alt="Honigglas">
   <div class="title">
-    <h1>Attrape-Abeilles Bürchen 🐝🍯</h1>
-    <p>Avec David, apiculteur en Valais — partie 30s</p>
+    <h1 id="t-title">Attrape-Abeilles Bürchen 🐝🍯</h1>
+    <p id="t-sub">Avec David, apiculteur en Valais — partie 30s</p>
+  </div>
+  <div class="lang">
+    <button id="lang-fr" class="chip active">FR</button>
+    <button id="lang-de" class="chip">DE</button>
   </div>
   <img src="999BE385-AE83-4F5F-8B9E-D1371F104F83.jpeg" alt="David"
        style="width:64px;height:64px;border-radius:50%;border:1px solid var(--line);object-fit:cover">
 </header>
 
 <div class="hud">
-  <div class="pill">Score : <span id="score">0</span></div>
-  <div class="pill">Combo : <span id="combo">x1</span></div>
-  <div class="pill">Temps : <span id="time">30</span>s</div>
-  <button class="btn" id="play">▶️ Jouer</button>
-  <button class="btn" id="smoke">💨 Fumée</button>
+  <div class="pill" id="t-score">Score : <span id="score">0</span></div>
+  <div class="pill" id="t-combo">Combo : <span id="combo">x1</span></div>
+  <div class="pill" id="t-time">Temps : <span id="time">30</span>s</div>
+  <button class="btn" id="play">▶️ <span id="t-play">Jouer</span></button>
+  <button class="btn" id="smoke">💨 <span id="t-smoke">Fumée</span></button>
 </div>
+
+<div class="facts" id="facts">ℹ️ …</div>
 
 <div class="wrap">
   <canvas id="cv"></canvas>
 
   <div class="overlay" id="splash">
     <div class="card">
-      <h2>Bienvenue 🧑‍🌾</h2>
-      <p>Attrape un max d’abeilles en <b>30 secondes</b>.<br>
-         Abeille +10 • Reine +50 • Guêpe −10. Double-tap / bouton 💨 pour calmer.</p>
-      <button class="btn" id="start">🍯 Lancer</button>
+      <h2 id="t-welcome">Bienvenue 🧑‍🌾</h2>
+      <p id="t-rules">
+        Attrape un max d’abeilles en <b>30 secondes</b>.<br>
+        Abeille +10 • Reine +50 • Guêpe −10. Double-tap / bouton 💨 pour calmer.
+      </p>
+      <button class="btn" id="start">🍯 <span id="t-start">Lancer</span></button>
     </div>
   </div>
 
   <div class="overlay" id="over" style="display:none">
     <div class="card">
-      <h2>Fin de partie</h2>
+      <h2 id="t-end">Fin de partie</h2>
       <p id="final"></p>
-      <button class="btn" id="again">🔁 Rejouer</button>
+      <button class="btn" id="again">🔁 <span id="t-again">Rejouer</span></button>
     </div>
   </div>
 </div>
@@ -69,30 +80,91 @@
 <div class="err" id="err"></div>
 
 <script>
-(()=>{ // ===== SAFE MODE + pot PNG transparent =====
+(()=>{ // ===== FR/DE + 6 infos pédagogiques + 3 fun-facts David =====
   const $=id=>document.getElementById(id);
   const cv=$('cv'), cx=cv.getContext('2d');
   const scoreEl=$('score'), comboEl=$('combo'), timeEl=$('time');
   const splash=$('splash'), over=$('over'), final=$('final');
   const bPlay=$('play'), bStart=$('start'), bAgain=$('again'), bSmoke=$('smoke');
-  const toasts=$('toasts'), errBox=$('err');
+  const factsEl=$('facts'), toasts=$('toasts'), errBox=$('err');
 
-  // Afficher toute erreur (anti page blanche)
-  window.onerror=(m,s,l,c,e)=>{errBox.style.display='block'; errBox.textContent=(m||'Erreur JS')+'\n'+(s||'');};
+  // i18n
+  const I18N={
+    fr:{
+      title:"Attrape-Abeilles Bürchen 🐝🍯",
+      sub:"Avec David, apiculteur en Valais — partie 30s",
+      score:"Score : ", combo:"Combo : ", time:"Temps : ", s:"s",
+      play:"Jouer", smoke:"Fumée", start:"Lancer",
+      welcome:"Bienvenue 🧑‍🌾",
+      rules:"Attrape un max d’abeilles en <b>30 secondes</b>.<br>Abeille +10 • Reine +50 • Guêpe −10. Double-tap / bouton 💨 pour calmer.",
+      end:"Fin de partie", again:"Rejouer",
+      wasp:"Aïe ! Guêpe !",
+      gold:"✨ Miel doré ! x2",
+      facts:[
+        "Une abeille produit ~1/12 de cuillère à café de miel dans toute sa vie.",
+        "Elles dansent pour indiquer la direction d’une fleur — la fameuse danse frétillante.",
+        "La reine peut pondre ~2 000 œufs par jour. Respect.",
+        "La ruche garde ~35 °C, hiver comme été : clim’ naturelle !",
+        "Les abeilles voient l’ultraviolet : certaines fleurs sont des panneaux fluo pour elles.",
+        "Un pot de 500 g = nectar d’environ 2 millions de fleurs.",
+        "David : plus de moutons… il élève des abeilles maintenant 🐑→🐝.",
+        "Dans le garage : trois motos et une Topolino. Oui, la petite italienne.",
+        "La pergola à Crans-Montana ? Euh… chantier de longue haleine 😅."
+      ]
+    },
+    de:{
+      title:"Bienenfänger Bürchen 🐝🍯",
+      sub:"Mit David, Imker im Wallis — 30-Sekunden-Runde",
+      score:"Punkte: ", combo:"Kombi: ", time:"Zeit: ", s:"s",
+      play:"Spielen", smoke:"Rauch", start:"Start",
+      welcome:"Willkommen 🧑‍🌾",
+      rules:"Fange so viele Bienen wie möglich in <b>30 Sekunden</b>.<br>Biene +10 • Königin +50 • Wespe −10. Doppeltippen / 💨 zum Beruhigen.",
+      end:"Spielende", again:"Nochmal",
+      wasp:"Aua! Wespe!",
+      gold:"✨ Goldhonig! x2",
+      facts:[
+        "Eine Biene produziert in ihrem Leben etwa 1/12 Teelöffel Honig.",
+        "Sie „tanzen“, um Blüten zu zeigen – der berühmte Schwänzeltanz.",
+        "Die Königin legt bis zu ~2 000 Eier pro Tag.",
+        "Im Bienenstock herrschen etwa 35 °C – natürliche Klimaanlage!",
+        "Bienen sehen UV – manche Blüten sind für sie Leuchtschilder.",
+        "Ein 500-g-Glas = Nektar von ca. 2 Millionen Blüten.",
+        "David: früher Schafe… jetzt Bienen 🐑→🐝.",
+        "In der Garage: drei Motorräder und eine Topolino. Ja, die kleine Italienerin.",
+        "Die Pergola in Crans-Montana? Nun ja… schon lange „im Bau“ 😅."
+      ]
+    }
+  };
+  let LANG = (navigator.language||"fr").startsWith("de") ? "de" : "fr";
+  function applyI18n(){
+    const t=I18N[LANG];
+    $("t-title").textContent=t.title; $("t-sub").textContent=t.sub;
+    $("t-score").firstChild.nodeValue=t.score; $("t-combo").firstChild.nodeValue=t.combo;
+    $("t-time").firstChild.nodeValue=t.time;  // suffixe s reste en span
+    $("t-play").textContent=t.play; $("t-smoke").textContent=t.smoke;
+    $("t-welcome").textContent=t.welcome; $("t-rules").innerHTML=t.rules;
+    $("t-end").textContent=t.end; $("t-again").textContent=t.again;
+    $("lang-fr").classList.toggle("active",LANG==="fr");
+    $("lang-de").classList.toggle("active",LANG==="de");
+  }
+  $("lang-fr").onclick=()=>{LANG="fr"; applyI18n();};
+  $("lang-de").onclick=()=>{LANG="de"; applyI18n();};
+  applyI18n();
+
+  // Anti page blanche
+  window.onerror=(m,s,l,c,e)=>{errBox.style.display='block'; errBox.textContent=(m||'JS Error')+'\n'+(s||'');};
 
   // Images
   const hive=new Image(); hive.src='719AC91B-EB0C-40B6-88AA-254CEA3F46CD.png';
   let hiveOK=false; hive.onload=()=>{hiveOK=true; layout();}; hive.onerror=layout;
 
   // Pot PNG transparent
-  const potImg = new Image(); let potReady=false;
-  potImg.src='IMG_7596.png';
-  potImg.onload=()=>potReady=true;
-  potImg.onerror=()=>{potReady=false;};
+  const potImg=new Image(); let potReady=false;
+  potImg.src='IMG_7596.png'; potImg.onload=()=>potReady=true; potImg.onerror=()=>{potReady=false;};
 
   // Layout
   let W=1280,H=720,dpr=1;
-  let hiveRect={x:0,y:0,w:0,h:0}, mouth={x:0,y:0}; // trou de vol approx
+  let hiveRect={x:0,y:0,w:0,h:0}, mouth={x:0,y:0};
   function layout(){
     dpr=Math.min(devicePixelRatio||1,2);
     W=cv.clientWidth; H=cv.clientHeight;
@@ -105,12 +177,20 @@
   }
   addEventListener('resize', layout, {passive:true}); layout();
 
-  // Etat
+  // State
   let running=false,timer=30,score=0,mult=1,gold=0,smoke=0,serie=0,serieTTL=0;
   const ptr={x:W/2,y:H/2,last:0}; let pot={x:W/2,y:H/2};
   let ents=[]; const MAX=14;
 
+  // Facts rotation
+  let fi=0, nextFact=1; // montre une info dès le début
+  function setFact(){
+    const arr=I18N[LANG].facts;
+    factsEl.textContent='ℹ️ '+arr[fi++%arr.length];
+  }
+
   // UI helpers
+  const toasts=$('toasts');
   const toast=(t)=>{ if(toasts.childElementCount) return;
     const d=document.createElement('div'); d.className='toast'; d.textContent=t; toasts.appendChild(d);
     setTimeout(()=>{d.style.opacity='0'; d.style.transform='translateY(-6px)';},1000);
@@ -118,7 +198,7 @@
   };
   const hud=()=>{scoreEl.textContent=score; comboEl.textContent='x'+mult; timeEl.textContent=Math.ceil(timer);};
 
-  // Entrées
+  // Inputs
   function setPtr(e){const b=cv.getBoundingClientRect();
     if(e.touches?.[0]){ptr.x=e.touches[0].clientX-b.left;ptr.y=e.touches[0].clientY-b.top;}
     else if(e.clientX!=null){ptr.x=e.clientX-b.left;ptr.y=e.clientY-b.top;}
@@ -126,14 +206,14 @@
   cv.addEventListener('mousemove',setPtr);
   cv.addEventListener('touchmove',setPtr,{passive:true});
   cv.addEventListener('touchstart',e=>{setPtr(e);const n=performance.now(); if(n-ptr.last<300) smoke=Math.max(smoke,6); ptr.last=n;},{passive:true});
-  bSmoke.onclick=()=>{smoke=Math.max(smoke,6); toast('💨 Tout doux les copines');};
+  bSmoke.onclick=()=>{smoke=Math.max(smoke,6); toast(I18N[LANG].smoke+' 💨');};
 
-  // Outils
+  // Helpers
   const attract=(ax,ay,bx,by,s)=>{let dx=ax-bx,dy=ay-by,d2=dx*dx+dy*dy; if(d2<1)d2=1; const d=Math.sqrt(d2), f=Math.max(-.08,Math.min(.08,s/d2)); return{fx:(dx/d)*f,fy:(dy/d)*f,d};};
 
   // Spawns
   function spawn(q=false){
-    const ang=(Math.random()*Math.PI/2)-Math.PI/4, dir={x:0.86,y:0.2}; // direction alignée planche d’envol
+    const ang=(Math.random()*Math.PI/2)-Math.PI/4, dir={x:0.86,y:0.2};
     const cs=Math.cos(ang), sn=Math.sin(ang);
     const v={x:dir.x*cs-dir.y*sn, y:dir.x*sn+dir.y*cs};
     const sp=1.2+Math.random()*0.8;
@@ -144,41 +224,31 @@
   function reset(){
     score=0; mult=1; timer=30; gold=0; smoke=0; serie=0; serieTTL=0; ents.length=0;
     for(let i=0;i<MAX;i++) spawn(Math.random()<.12); spawnWasp();
-    pot={x:W/2,y:H/2}; hud();
+    pot={x:W/2,y:H/2}; hud(); fi=0; nextFact=0.1; setFact();
   }
 
-  // Rendu
+  // Rendering
   function drawHive(){
     if(!hiveOK) return;
     cx.fillStyle="rgba(0,0,0,.15)"; cx.fillRect(hiveRect.x-8,hiveRect.y-8,hiveRect.w+16,hiveRect.h+16);
     cx.drawImage(hive, hiveRect.x, hiveRect.y, hiveRect.w, hiveRect.h);
     cx.globalAlpha=.33; cx.fillStyle='rgba(215,176,106,.7)'; cx.beginPath(); cx.arc(mouth.x,mouth.y,7,0,6.283); cx.fill(); cx.globalAlpha=1;
   }
-
-  // >>> Pot PNG transparent + ombre douce
   function drawPot(){
     const pw = Math.min(130, Math.max(100, Math.min(W,H)*0.18));
     const ph = pw * 1.25;
-    // ombre sous le pot (intégration réaliste)
+    // Ombre douce sous le pot
     const sh = ph*0.12;
     const g = cx.createRadialGradient(pot.x, pot.y+ph*0.45, 4, pot.x, pot.y+ph*0.45, pw*0.55);
     g.addColorStop(0,'rgba(0,0,0,.35)'); g.addColorStop(1,'rgba(0,0,0,0)');
     cx.fillStyle=g; cx.beginPath(); cx.ellipse(pot.x, pot.y+ph*0.45, pw*0.52, sh, 0, 0, Math.PI*2); cx.fill();
-
-    if (potReady){
-      cx.drawImage(potImg, pot.x - pw/2, pot.y - ph/2, pw, ph);
-    } else {
-      // Fallback vectoriel (si l'image n'est pas dispo)
-      const r=58; cx.save(); cx.translate(pot.x,pot.y);
-      cx.beginPath(); cx.moveTo(-r*.6,-r*.6);
-      cx.quadraticCurveTo(-r*.9,r*.2,-r*.5,r*.9);
-      cx.quadraticCurveTo(0,r*1.2,r*.5,r*.9);
-      cx.quadraticCurveTo(r*.9,r*.2,r*.6,-r*.6); cx.closePath();
-      cx.fillStyle='#2a2118'; cx.fill(); cx.lineWidth=2; cx.strokeStyle='rgba(215,176,106,.65)'; cx.stroke();
-      cx.restore();
+    if(potReady){ cx.drawImage(potImg, pot.x - pw/2, pot.y - ph/2, pw, ph); }
+    else{ const r=58; cx.save(); cx.translate(pot.x,pot.y);
+      cx.beginPath(); cx.moveTo(-r*.6,-r*.6); cx.quadraticCurveTo(-r*.9,r*.2,-r*.5,r*.9);
+      cx.quadraticCurveTo(0,r*1.2,r*.5,r*.9); cx.quadraticCurveTo(r*.9,r*.2,r*.6,-r*.6); cx.closePath();
+      cx.fillStyle='#2a2118'; cx.fill(); cx.lineWidth=2; cx.strokeStyle='rgba(215,176,106,.65)'; cx.stroke(); cx.restore();
     }
   }
-
   function drawBee(b){
     cx.save(); cx.translate(b.x,b.y); cx.rotate(Math.atan2(b.vy,b.vx));
     cx.fillStyle=(b.t==='Q')?'#ffe08f':'#e7c16a';
@@ -188,11 +258,15 @@
   }
   function drawWasp(w){ cx.save(); cx.translate(w.x,w.y); cx.rotate(Math.atan2(w.vy,w.vx)); cx.fillStyle='#ff7d7d'; cx.beginPath(); cx.ellipse(0,0,w.r+2,w.r,0,0,6.283); cx.fill(); cx.restore(); }
 
-  // Boucle
+  // Loop
   function step(dt){
+    // facts
+    nextFact-=dt; if(nextFact<=0){ setFact(); nextFact=6; }
+
     // pot suit doigt
     const ez=Math.min(1,dt*7); pot.x+=(ptr.x-pot.x)*ez; pot.y+=(ptr.y-pot.y)*ez;
-    // spawns progressifs
+
+    // spawns
     const press=1+(1-timer/30)*0.8; if(ents.length<MAX*press) spawn(Math.random()<.15);
     const FORCE=3400*press;
 
@@ -203,14 +277,15 @@
         e.vx+=a.fx; e.vy+=a.fy; const cap=2.3*e.spd*sl;
         e.vx=Math.max(-cap,Math.min(cap,e.vx)); e.vy=Math.max(-cap,Math.min(cap,e.vy));
         e.x+=e.vx; e.y+=e.vy;
-        if(a.d<80){ score+=(e.t==='Q'?50:10)*mult; serie++; serieTTL=3; if(serie%3===0){gold=6; mult=2; toast('✨ Miel doré ! x2');}
+        if(a.d<80){ score+=(e.t==='Q'?50:10)*mult; serie++; serieTTL=3;
+          if(serie%3===0){gold=6; mult=2; toast(I18N[LANG].gold);}
           ents.splice(i,1); continue; }
       }else{
         const sl=smoke>0?.55:1; const a=attract(e.x,e.y,pot.x,pot.y,3100*sl);
         e.vx+=a.fx; e.vy+=a.fy; const cap=2.5*sl;
         e.vx=Math.max(-cap,Math.min(cap,e.vx)); e.vy=Math.max(-cap,Math.min(cap,e.vy));
         e.x+=e.vx; e.y+=e.vy; if(e.cd>0) e.cd-=dt;
-        if(e.cd<=0 && Math.hypot(e.x-pot.x,e.y-pot.y)<56){ score=Math.max(0,score-10); serie=0; serieTTL=0; mult=gold>0?2:1; e.cd=.9; toast('Aïe ! Guêpe !'); }
+        if(e.cd<=0 && Math.hypot(e.x-pot.x,e.y-pot.y)<56){ score=Math.max(0,score-10); serie=0; serieTTL=0; mult=gold>0?2:1; e.cd=.9; toast(I18N[LANG].wasp); }
       }
       if(e.x<-20)e.x=W+20; if(e.x>W+20)e.x=-20; if(e.y<-20)e.y=H+20; if(e.y>H+20)e.y=-20;
     }
@@ -224,7 +299,7 @@
   }
   function render(){
     cx.clearRect(0,0,W,H);
-    // légère grille (debug)
+    // grille légère
     cx.globalAlpha=.12; cx.strokeStyle='#261d14';
     for(let i=0;i<W;i+=64){ cx.beginPath(); cx.moveTo(i,0); cx.lineTo(i,H); cx.stroke(); }
     for(let j=0;j<H;j+=64){ cx.beginPath(); cx.moveTo(0,j); cx.lineTo(W,j); cx.stroke(); }
@@ -240,13 +315,33 @@
     step(dt); render(); requestAnimationFrame(loop);
   }
 
-  // Contrôles
+  // Controls
   function start(){ reset(); running=true; splash.style.display='none'; over.style.display='none'; loop.t=undefined; requestAnimationFrame(loop); }
-  function end(){ running=false; over.style.display='grid'; final.textContent='Score : '+score+' • '+(mult===2?'miel doré activé':'combo x1'); }
+  function end(){ running=false; over.style.display='grid';
+    final.textContent=(LANG==="fr")
+      ? `Score : ${score} • ${mult===2?'miel doré activé':'combo x1'}`
+      : `Punkte: ${score} • ${mult===2?'Goldhonig aktiv':'Kombi x1'}`;
+  }
 
   bPlay.onclick=start; bStart.onclick=start; bAgain.onclick=start;
   let armed=true; addEventListener('pointerdown',()=>{ if(armed){armed=false; start();}}, {once:true,passive:true});
 
+  // Mettre l’UI dans la bonne langue dès le départ
+  function syncLabels(){
+    $("t-title").textContent=I18N[LANG].title; $("t-sub").textContent=I18N[LANG].sub;
+    $("t-score").firstChild.nodeValue=I18N[LANG].score;
+    $("t-combo").firstChild.nodeValue=I18N[LANG].combo;
+    $("t-time").firstChild.nodeValue=I18N[LANG].time;
+    $("t-play").textContent=I18N[LANG].play; $("t-smoke").textContent=I18N[LANG].smoke;
+    $("t-welcome").textContent=I18N[LANG].welcome; $("t-rules").innerHTML=I18N[LANG].rules;
+    $("t-end").textContent=I18N[LANG].end; $("t-again").textContent=I18N[LANG].again;
+  }
+  syncLabels();
+  $("lang-fr").onclick=()=>{LANG="fr"; syncLabels(); setFact();};
+  $("lang-de").onclick=()=>{LANG="de"; syncLabels(); setFact();};
+
+  // Start facts line
+  setFact();
   hud();
 })();
 </script>
