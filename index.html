@@ -3,11 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Attrape-Abeilles / Bienenfänger — 30s (FR/DE + pauses)</title>
+<title>Attrape-Abeilles / Bienenfänger — 30s (FR/DE + Coco)</title>
 <style>
   :root{--gold:#d7b06a;--line:#3a2d1a}
   html,body{margin:0;height:100%;background:#0d0a08;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-  /* HUD compact au-dessus du jeu */
   header,.hud{position:relative;z-index:10}
   header{display:flex;gap:10px;align-items:center;padding:max(8px,env(safe-area-inset-top)) 12px 8px;border-bottom:1px solid var(--line);background:#121212}
   .label{width:46px;height:46px;border-radius:10px;border:1px solid var(--line);object-fit:contain;background:#1a1510}
@@ -20,25 +19,20 @@
   .hud{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 12px;background:#101010;border-bottom:1px solid var(--line)}
   .pill{background:#171717;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-weight:700;min-height:36px}
   .btn{background:var(--gold);color:#23180b;border:none;border-radius:12px;padding:10px 16px;font-weight:800;cursor:pointer;min-height:44px}
-  /* Plus d'espace au jeu : canvas quasi plein écran */
+  /* plus d’espace au jeu */
   .wrap{position:relative;z-index:1;width:100%;height:calc(100dvh - 210px);min-height:420px;touch-action:none}
   canvas{position:absolute;inset:0;width:100%;height:100%;display:block;background:#0d0a08}
-  /* Overlays */
   .overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.45)}
   .card{background:#151515;border:1px solid var(--line);border-radius:14px;padding:16px;max-width:640px}
   .toasts{position:fixed;left:0;right:0;bottom:12px;display:grid;place-items:center;pointer-events:none;z-index:20}
   .toast{background:#222;border:1px solid var(--line);border-radius:10px;padding:8px 12px}
   .err{position:fixed;left:12px;right:12px;bottom:12px;background:#3b1a1a;border:1px solid #a33;border-radius:10px;padding:10px;font-size:13px;display:none;white-space:pre-wrap;z-index:30}
-  /* Pause info */
+  /* pause info */
   #infoPause{display:none;animation:fade .2s ease}
   #infoPause .card h3{margin:.2em 0}
   #infoPause .card p{margin:.3em 0 .6em}
   @keyframes fade{from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none}}
-  @media (max-width:420px){
-    .title h1{font-size:18px}
-    .title p{font-size:12px}
-    .btn{flex:1}
-  }
+  @media (max-width:420px){ .title h1{font-size:18px} .title p{font-size:12px} .btn{flex:1} }
 </style>
 </head>
 <body>
@@ -46,7 +40,7 @@
   <img id="labelImg" class="label" src="IMG_7596.png" alt="Honigglas">
   <div class="title">
     <h1 id="t-title">Attrape-Abeilles Bürchen 🐝🍯</h1>
-    <p id="t-sub">Avec David, apiculteur en Valais — partie 30s</p>
+    <p id="t-sub">Avec David (Coco), apiculteur en Valais — partie 30s</p>
   </div>
   <div class="lang">
     <button id="lang-fr" class="chip active">FR</button>
@@ -66,7 +60,6 @@
 <div class="wrap">
   <canvas id="cv"></canvas>
 
-  <!-- Écran d’accueil -->
   <div class="overlay" id="splash">
     <div class="card">
       <h2 id="t-welcome">Bienvenue 🧑‍🌾</h2>
@@ -78,16 +71,15 @@
     </div>
   </div>
 
-  <!-- Pauses pédagogiques -->
+  <!-- Pauses pédagogiques/anecdotes -->
   <div class="overlay" id="infoPause">
     <div class="card">
-      <h3 id="t-pause-title">Info minute</h3>
+      <h3 id="t-pause-title">Minute apicole</h3>
       <p id="pauseText">…</p>
       <div style="opacity:.8"><span id="t-resume">Reprise dans</span> <b id="resumeIn">5</b>s</div>
     </div>
   </div>
 
-  <!-- Fin de partie -->
   <div class="overlay" id="over" style="display:none">
     <div class="card">
       <h2 id="t-end">Fin de partie</h2>
@@ -101,19 +93,20 @@
 <div class="err" id="err"></div>
 
 <script>
-(()=>{ // ===== FR/DE + pauses auto + écran optimisé =====
+(()=>{ // ===== FR/DE + pauses 10s/5s + anecdotes Coco =====
   const $=id=>document.getElementById(id);
   const cv=$('cv'), X=cv.getContext('2d');
   const scoreEl=$('score'), comboEl=$('combo'), timeEl=$('time');
   const splash=$('splash'), over=$('over'), final=$('final');
   const bPlay=$('play'), bStart=$('start'), bAgain=$('again');
   const infoPause=$('infoPause'), pauseText=$('pauseText'), resumeIn=$('resumeIn');
+  const errBox=$('err'), toasts=$('toasts');
 
-  // i18n
+  // I18N avec 6 faits + 6 anecdotes Coco (FR/DE)
   const I18N={
     fr:{
       title:"Attrape-Abeilles Bürchen 🐝🍯",
-      sub:"Avec David, apiculteur en Valais — partie 30s",
+      sub:"Avec David (Coco), apiculteur en Valais — partie 30s",
       score:"Score : ", combo:"Combo : ", time:"Temps : ",
       play:"Jouer", start:"Lancer",
       welcome:"Bienvenue 🧑‍🌾",
@@ -128,15 +121,20 @@
         "La reine peut pondre ~2 000 œufs par jour. Respect.",
         "La ruche garde ~35 °C, hiver comme été : clim’ naturelle !",
         "Les abeilles voient l’ultraviolet : des panneaux fluo pour elles.",
-        "Un pot de 500 g = nectar d’environ 2 millions de fleurs.",
-        "David : plus de moutons… il élève des abeilles maintenant 🐑→🐝.",
-        "Dans le garage : trois motos et une Topolino. La petite italienne.",
-        "La pergola à Crans-Montana ? Projet de longue haleine 😅."
+        "Un pot de 500 g = nectar d’environ 2 millions de fleurs."
+      ],
+      coco:[
+        "Coco a troqué les moutons pour les abeilles : moins de bêêê, plus de bzzz 🐑→🐝.",
+        "Dans le garage de Coco : trois motos et une Topolino… qui « redémarre cet été » depuis 8 ans.",
+        "A tenté (vraiment) de transporter une ruche… en moto. Idée abandonnée à 200 mètres.",
+        "Son miel préféré ? Celui “juste pour goûter” — et la cuillère disparaît mystérieusement.",
+        "La pergola à Crans-Montana : chantier légendaire. Livraison prévue… avant les JO 2028 ?",
+        "Coco parle aux abeilles comme à ses anciens moutons. Il jure qu’elles répondent."
       ]
     },
     de:{
       title:"Bienenfänger Bürchen 🐝🍯",
-      sub:"Mit David, Imker im Wallis — 30-Sekunden-Runde",
+      sub:"Mit David (Coco), Imker im Wallis — 30-Sekunden-Runde",
       score:"Punkte: ", combo:"Kombi: ", time:"Zeit: ",
       play:"Spielen", start:"Start",
       welcome:"Willkommen 🧑‍🌾",
@@ -146,15 +144,20 @@
       pauseTitle:"Imker-Minute",
       resume:"Weiter in",
       facts:[
-        "Eine Biene produziert im Leben ca. 1/12 Teelöffel Honig.",
+        "Eine Biene produziert im Leben etwa 1/12 Teelöffel Honig.",
         "Sie „tanzen“, um Blüten zu zeigen – der Schwänzeltanz.",
         "Die Königin legt bis zu ~2 000 Eier pro Tag.",
         "Im Stock herrschen ~35 °C – natürliche Klimaanlage!",
         "Bienen sehen UV – manche Blüten sind Leuchtschilder.",
-        "Ein 500-g-Glas = Nektar von etwa 2 Millionen Blüten.",
-        "David: früher Schafe… jetzt Bienen 🐑→🐝.",
-        "In der Garage: drei Motorräder und eine Topolino.",
-        "Die Pergola in Crans-Montana? Schon lange „im Bau“ 😅."
+        "Ein 500-g-Glas = Nektar von rund 2 Millionen Blüten."
+      ],
+      coco:[
+        "Coco tauschte Schafe gegen Bienen: weniger Mäh, mehr Bzzz 🐑→🐝.",
+        "In der Garage: drei Motorräder und eine Topolino… „läuft im Sommer wieder“, seit 8 Jahren.",
+        "Versuchte ernsthaft, eine Beute per Motorrad zu transportieren. 200 m später: Plan geändert.",
+        "Lieblingshonig? Der zum „nur kurz probieren“ – der Löffel bleibt weg.",
+        "Die Pergola in Crans-Montana: epische Baustelle. Fertig… vielleicht vor den Spielen 2028?",
+        "Coco spricht mit den Bienen wie früher mit den Schafen. Er meint, sie antworten."
       ]
     }
   };
@@ -167,22 +170,21 @@
     $("t-welcome").textContent=t.welcome; $("t-rules").innerHTML=t.rules;
     $("t-end").textContent=t.end; $("t-again").textContent=t.again;
     $("t-pause-title").textContent=t.pauseTitle; $("t-resume").textContent=t.resume;
-    $("lang-fr").classList.toggle("active",LANG==="fr");
-    $("lang-de").classList.toggle("active",LANG==="de");
+    $("lang-fr").classList.toggle("active",LANG==="fr"); $("lang-de").classList.toggle("active",LANG==="de");
   }
-  $("lang-fr").onclick=()=>{LANG="fr"; setLang();}
-  $("lang-de").onclick=()=>{LANG="de"; setLang();}
+  $("lang-fr").onclick=()=>{LANG="fr"; setLang(); buildMessagePool();};
+  $("lang-de").onclick=()=>{LANG="de"; setLang(); buildMessagePool();};
   setLang();
 
   // Anti page blanche
-  window.onerror=(m,s)=>{const e=document.getElementById('err');e.style.display='block';e.textContent=(m||'JS Error')+'\n'+(s||'');};
+  window.onerror=(m,s)=>{errBox.style.display='block'; errBox.textContent=(m||'JS Error')+'\n'+(s||'');};
 
-  // Images (ruche + pot PNG)
+  // Images
   const hive=new Image(); hive.src='719AC91B-EB0C-40B6-88AA-254CEA3F46CD.png';
   let hiveOK=false; hive.onload=()=>{hiveOK=true; layout();}; hive.onerror=layout;
   const potImg=new Image(); let potReady=false; potImg.src='IMG_7596.png'; potImg.onload=()=>potReady=true;
 
-  // Layout (plus d'espace au jeu + ruche centrée)
+  // Layout (canvas plus grand, ruche centrée)
   let W=1280,H=720,dpr=1;
   let hiveRect={x:0,y:0,w:0,h:0}, mouth={x:0,y:0};
   function layout(){
@@ -201,15 +203,23 @@
   let running=false, pausedInfo=false, timer=30, score=0, mult=1, gold=0, smoke=0, serie=0, serieTTL=0;
   const ptr={x:W/2,y:H/2,last:0}; let pot={x:W/2,y:H/2};
   let ents=[]; const MAX=14;
-  let nextPauseAt=20; // pauses à 20s puis 10s
+  let nextPauseAt=20; // 20s puis 10s
+  let pool=[], poolIdx=0; // messages FR/DE mélangés
+
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
+  function buildMessagePool(){
+    const t=I18N[LANG];
+    pool = shuffle([ ...t.facts.map(x=>"📚 "+x), ...t.coco.map(x=>"😂 "+x) ]);
+    poolIdx=0;
+  }
+  buildMessagePool();
 
   // HUD & toasts
-  const toasts=$('toasts');
   const toast=(msg)=>{ if(toasts.childElementCount) return; const d=document.createElement('div'); d.className='toast'; d.textContent=msg; toasts.appendChild(d);
-    setTimeout(()=>{d.style.opacity='0'; d.style.transform='translateY(-6px)';},1000); setTimeout(()=>d.remove(),1400);}
-  const hud=()=>{scoreEl.textContent=score; comboEl.textContent='x'+mult; timeEl.textContent=Math.ceil(timer);};
+    setTimeout(()=>{d.style.opacity='0'; d.style.transform='translateY(-6px)';},1000); setTimeout(()=>d.remove(),1400); }
+  const hud=()=>{ scoreEl.textContent=score; comboEl.textContent='x'+mult; timeEl.textContent=Math.ceil(timer); };
 
-  // Entrées (double-tap = astuce calmante)
+  // Entrées (double-tap = calmant caché)
   function setPtr(e){const b=cv.getBoundingClientRect(); if(e.touches?.[0]){ptr.x=e.touches[0].clientX-b.left;ptr.y=e.touches[0].clientY-b.top;} else if(e.clientX!=null){ptr.x=e.clientX-b.left;ptr.y=e.clientY-b.top;}}
   cv.addEventListener('mousemove',setPtr);
   cv.addEventListener('touchmove',setPtr,{passive:true});
@@ -229,7 +239,7 @@
   function reset(){
     score=0; mult=1; timer=30; gold=0; smoke=0; serie=0; serieTTL=0; ents.length=0;
     for(let i=0;i<MAX;i++) spawn(Math.random()<.12); spawnWasp();
-    pot={x:W/2,y:H/2}; hud(); nextPauseAt=20; pausedInfo=false;
+    pot={x:W/2,y:H/2}; hud(); nextPauseAt=20; pausedInfo=false; buildMessagePool();
   }
 
   // Rendu
@@ -289,7 +299,7 @@
     if(gold>0){gold-=dt; if(gold<=0) mult=1;}
     if(smoke>0) smoke-=dt;
 
-    // chrono + pauses 10s
+    // chrono + pauses à 20s et 10s
     const before=Math.ceil(timer);
     timer-=dt;
     const after=Math.ceil(timer);
@@ -301,17 +311,15 @@
 
   function triggerInfoPause(){
     pausedInfo=true;
-    // choisir une info (en alternance)
-    const facts=I18N[LANG].facts;
-    triggerInfoPause.i=(triggerInfoPause.i||0)+1;
-    pauseText.textContent=facts[(triggerInfoPause.i-1)%facts.length];
-
-    $("t-pause-title").textContent=I18N[LANG].pauseTitle;
-    $("t-resume").textContent=I18N[LANG].resume;
+    const t=I18N[LANG];
+    const msg = pool[poolIdx++ % pool.length] || (LANG==="fr"?"(petite pause)":"(kurze Pause)");
+    $("t-pause-title").textContent = t.pauseTitle;
+    $("t-resume").textContent = t.resume;
+    pauseText.textContent = msg;
     let left=5; resumeIn.textContent=left;
     infoPause.style.display='grid';
-    const int=setInterval(()=>{ left--; resumeIn.textContent=left; if(left<=0){clearInterval(int); infoPause.style.display='none'; pausedInfo=false; } },1000);
-    nextPauseAt-=10; // prochaine pause
+    const int=setInterval(()=>{ left--; resumeIn.textContent=left; if(left<=0){clearInterval(int); infoPause.style.display='none'; pausedInfo=false;} },1000);
+    nextPauseAt-=10;
   }
 
   function render(){
@@ -321,7 +329,6 @@
     for(let i=0;i<W;i+=64){X.beginPath();X.moveTo(i,0);X.lineTo(i,H);X.stroke();}
     for(let j=0;j<H;j+=64){X.beginPath();X.moveTo(0,j);X.lineTo(W,j);X.stroke();}
     X.globalAlpha=1;
-
     drawHive();
     for(const e of ents){ (e.t==='W')?drawWasp(e):drawBee(e); }
     drawPot();
@@ -332,18 +339,40 @@
     step(dt); render(); requestAnimationFrame(loop);
   }
 
-  // Contrôles
+  // flow
   function start(){ reset(); running=true; splash.style.display='none'; over.style.display='none'; loop.t=undefined; requestAnimationFrame(loop); }
   function end(){ running=false; over.style.display='grid';
     final.textContent=(LANG==="fr")
       ? `Score : ${score} • ${mult===2?'miel doré activé':'combo x1'}`
       : `Punkte: ${score} • ${mult===2?'Goldhonig aktiv':'Kombi x1'}`;
   }
+
+  // Boutons cliquables (au-dessus du canvas)
   bPlay.addEventListener('click', start, {passive:true});
   bStart.addEventListener('click', start, {passive:true});
   bAgain.addEventListener('click', start, {passive:true});
 
+  // Images prêtes → pot / ruche
+  let potReady=false; potImg.onload=()=>potReady=true;
+
+  // Helpers rendu
+  function drawHive(){
+    if(!hiveOK) return;
+    X.fillStyle="rgba(0,0,0,.15)"; X.fillRect(hiveRect.x-8,hiveRect.y-8,hiveRect.w+16,hiveRect.h+16);
+    X.drawImage(hive, hiveRect.x, hiveRect.y, hiveRect.w, hiveRect.h);
+    X.globalAlpha=.33; X.fillStyle='rgba(215,176,106,.7)'; X.beginPath(); X.arc(mouth.x,mouth.y,7,0,6.283); X.fill(); X.globalAlpha=1;
+  }
+  function drawPot(){
+    const pw=Math.min(140, Math.max(110, Math.min(W,H)*0.2));
+    const ph=pw*1.25;
+    const sh=ph*0.13; const g=X.createRadialGradient(pot.x,pot.y+ph*0.45,4,pot.x,pot.y+ph*0.45,pw*0.55);
+    g.addColorStop(0,'rgba(0,0,0,.35)'); g.addColorStop(1,'rgba(0,0,0,0)');
+    X.fillStyle=g; X.beginPath(); X.ellipse(pot.x,pot.y+ph*0.45,pw*0.52,sh,0,0,Math.PI*2); X.fill();
+    if(potReady) X.drawImage(potImg, pot.x-pw/2, pot.y-ph/2, pw, ph);
+  }
+
   // Init
+  function hud(){ scoreEl.textContent=score; comboEl.textContent='x'+mult; timeEl.textContent=Math.ceil(timer); }
   hud();
 })();
 </script>
