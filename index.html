@@ -2,37 +2,307 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Miel — test de vie (v1)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Attrape-Abeilles Bürchen — Coco</title>
 <style>
-  html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-  body{display:grid;place-items:center;background:#0d0a08;color:#fff}
-  .card{max-width:680px;background:#151515;border:1px solid #3a2d1a;border-radius:14px;padding:20px}
-  .btn{background:#d7b06a;color:#23180b;border:none;border-radius:12px;padding:10px 16px;font-weight:800;cursor:pointer}
-  .err{margin-top:10px;background:#3b1a1a;border:1px solid #a33;border-radius:10px;padding:10px;display:none;white-space:pre-wrap}
+  :root{--gold:#d7b06a;--line:#3a2d1a}
+  html,body{margin:0;height:100%;background:#0d0a08;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  header{display:flex;gap:10px;align-items:center;padding:max(8px,env(safe-area-inset-top)) 12px 8px;border-bottom:1px solid var(--line);background:#121212}
+  .label{width:46px;height:46px;border-radius:10px;border:1px solid var(--line);object-fit:contain;background:#1a1510}
+  .title{flex:1}
+  .title h1{margin:0;font-size:20px;line-height:1.05}
+  .title p{margin:2px 0 0;color:#e7d6b8;font-size:13px}
+  .lang{display:flex;gap:6px}
+  .chip{background:#1a1a1a;border:1px solid var(--line);padding:6px 10px;border-radius:12px;font-weight:700;cursor:pointer}
+  .chip.active{background:var(--gold);color:#23180b}
+  .hud{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 12px;background:#101010;border-bottom:1px solid var(--line)}
+  .pill{background:#171717;border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-weight:700}
+  .btn{background:var(--gold);color:#23180b;border:none;border-radius:12px;padding:10px 16px;font-weight:800;cursor:pointer}
+  .wrap{position:relative;width:100%;height:calc(100dvh - 210px);min-height:420px;touch-action:none}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;background:#0d0a08}
+  .overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.45)}
+  .card{background:#151515;border:1px solid var(--line);border-radius:14px;padding:16px;max-width:640px}
+  .toasts{position:fixed;left:0;right:0;bottom:12px;display:grid;place-items:center;pointer-events:none;z-index:30}
+  .toast{background:#222;border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+  .err{position:fixed;left:12px;right:12px;bottom:12px;background:#3b1a1a;border:1px solid #a33;border-radius:10px;padding:10px;font-size:13px;display:none;white-space:pre-wrap;z-index:40}
+  #infoPause{display:none}
+  @media (max-width:420px){ .title h1{font-size:18px} .title p{font-size:12px} }
 </style>
 </head>
 <body>
-  <div class="card">
-    <h1>👍 Site chargé</h1>
-    <p>Si tu vois ce message, GitHub Pages sert bien <code>index.html</code>.</p>
-    <p><button class="btn" id="go">Démarrer le jeu</button></p>
-    <p id="status" style="opacity:.8">En attente…</p>
-    <pre class="err" id="err"></pre>
+<header>
+  <img class="label" src="IMG_7596.png" alt="Honig">
+  <div class="title">
+    <h1 id="t-title">Attrape-Abeilles Bürchen 🐝🍯</h1>
+    <p id="t-sub">Avec David (Coco), apiculteur en Valais — partie 30s</p>
   </div>
+  <div class="lang">
+    <button id="lang-fr" class="chip active">FR</button>
+    <button id="lang-de" class="chip">DE</button>
+  </div>
+  <img src="999BE385-AE83-4F5F-8B9E-D1371F104F83.jpeg" alt="David"
+       style="width:56px;height:56px;border-radius:50%;border:1px solid var(--line);object-fit:cover">
+</header>
+
+<div class="hud">
+  <div class="pill" id="t-score">Score : <span id="score">0</span></div>
+  <div class="pill" id="t-combo">Combo : <span id="combo">x1</span></div>
+  <div class="pill" id="t-time">Temps : <span id="time">30</span>s</div>
+  <button class="btn" id="play">▶️ <span id="t-play">Jouer</span></button>
+</div>
+
+<div class="wrap">
+  <canvas id="cv" width="800" height="450" aria-label="aire de jeu"></canvas>
+
+  <div class="overlay" id="splash">
+    <div class="card">
+      <h2 id="t-welcome">Bienvenue 🧑‍🌾</h2>
+      <p id="t-rules">Attrape un max d’abeilles en <b>30&nbsp;secondes</b>.<br>
+        Abeille +10 • Reine +50 • Guêpe −10. <b>Astuce :</b> double-tap pour calmer.</p>
+      <button class="btn" id="start">🍯 <span id="t-start">Lancer</span></button>
+    </div>
+  </div>
+
+  <div class="overlay" id="infoPause">
+    <div class="card">
+      <h3 id="t-pause-title">Minute apicole</h3>
+      <p id="pauseText">…</p>
+      <div style="opacity:.85"><span id="t-resume">Reprise dans</span> <b id="resumeIn">5</b>s</div>
+    </div>
+  </div>
+
+  <div class="overlay" id="over" style="display:none">
+    <div class="card">
+      <h2 id="t-end">Fin de partie</h2>
+      <p id="final"></p>
+      <button class="btn" id="again">🔁 <span id="t-again">Rejouer</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<div class="err" id="err"></div>
 
 <script>
 (function(){
   const $=id=>document.getElementById(id);
-  const status=$('status'), err=$('err');
-  // si une erreur JS survient, on l'affiche clairement
-  window.onerror=(m,s,l,c,e)=>{ err.style.display='block'; err.textContent=(m||'Erreur JS')+(l?(' @'+l):''); };
-  $('go').onclick=()=>{ status.textContent='Jeu en route…'; start(); };
+  const err=$('err');
+  window.onerror=(m)=>{err.style.display='block'; err.textContent=(m||'Erreur JS');};
 
-  // —— mini-jeu minimal : change juste le texte toutes les 500ms
-  function start(){
-    let n=0; setInterval(()=>{ status.textContent='Ça buzz ('+(++n)+')'; }, 500);
+  // — I18N
+  const I18N={
+    fr:{title:"Attrape-Abeilles Bürchen 🐝🍯", sub:"Avec David (Coco), apiculteur en Valais — partie 30s",
+      score:"Score : ", combo:"Combo : ", time:"Temps : ", play:"Jouer", start:"Lancer",
+      welcome:"Bienvenue 🧑‍🌾",
+      rules:"Attrape un max d’abeilles en <b>30&nbsp;secondes</b>.<br>Abeille +10 • Reine +50 • Guêpe −10. <b>Astuce :</b> double-tap pour calmer.",
+      end:"Fin de partie", again:"Rejouer", pauseTitle:"Minute apicole", resume:"Reprise dans",
+      wasp:"Aïe ! Guêpe !", gold:"✨ Miel doré ! x2",
+      facts:[
+        "Une abeille fait ~1/12 de cuillère à café de miel dans toute sa vie.",
+        "Elles dansent pour indiquer la direction des fleurs (danse frétillante).",
+        "La reine pond ~2 000 œufs par jour.",
+        "La ruche maintient ~35 °C naturellement.",
+        "Les abeilles voient l’ultraviolet.",
+        "500 g de miel = env. 2 millions de fleurs."
+      ],
+      coco:[
+        "Coco a troqué les moutons pour les abeilles : moins de bêêê, plus de bzzz.",
+        "Garage : 3 motos + 1 Topolino… qui « redémarre cet été » depuis 8 ans.",
+        "A tenté de transporter une ruche en moto. 200 m plus tard : demi-tour.",
+        "Son miel préféré ? Celui « juste pour goûter ». La cuillère disparaît.",
+        "Pergola à Crans-Montana : chantier mythique. Livraison avant 2028 ?",
+        "Coco parle aux abeilles comme à ses anciens moutons. Il jure qu’elles répondent."
+      ]
+    },
+    de:{title:"Bienenfänger Bürchen 🐝🍯", sub:"Mit David (Coco), Imker im Wallis — 30-Sekunden-Runde",
+      score:"Punkte: ", combo:"Kombi: ", time:"Zeit: ", play:"Spielen", start:"Start",
+      welcome:"Willkommen 🧑‍🌾",
+      rules:"Fange möglichst viele Bienen in <b>30&nbsp;Sekunden</b>.<br>Biene +10 • Königin +50 • Wespe −10. <b>Tipp:</b> Doppeltipp beruhigt.",
+      end:"Spielende", again:"Nochmal", pauseTitle:"Imker-Minute", resume:"Weiter in",
+      wasp:"Aua! Wespe!", gold:"✨ Goldhonig! x2",
+      facts:[
+        "Eine Biene produziert im Leben ca. 1/12 Teelöffel Honig.",
+        "Sie „tanzen“, um Blüten zu zeigen – der Schwänzeltanz.",
+        "Die Königin legt bis zu ~2 000 Eier pro Tag.",
+        "Im Stock herrschen ~35 °C – natürliche Klimaanlage!",
+        "Bienen sehen UV-Licht.",
+        "500 g Honig = Nektar von ~2 Mio. Blüten."
+      ],
+      coco:[
+        "Coco tauschte Schafe gegen Bienen: weniger Mäh, mehr Bzzz.",
+        "In der Garage: 3 Motorräder + eine Topolino… „läuft im Sommer wieder“ seit 8 Jahren.",
+        "Wollte eine Beute per Motorrad transportieren. Nach 200 m: Plan geändert.",
+        "Lieblingshonig? Der zum „nur kurz probieren“. Löffel bleibt weg.",
+        "Pergola in Crans-Montana: epische Baustelle. Vor 2028 fertig?",
+        "Coco spricht mit Bienen wie früher mit Schafen. Er meint, sie antworten."
+      ]
+    }
+  };
+  let LANG=(navigator.language||'fr').startsWith('de')?'de':'fr';
+  function setLang(){
+    const t=I18N[LANG];
+    $('t-title').textContent=t.title; $('t-sub').textContent=t.sub;
+    $('t-score').firstChild.nodeValue=t.score; $('t-combo').firstChild.nodeValue=t.combo; $('t-time').firstChild.nodeValue=t.time+' ';
+    $('t-play').textContent=t.play; $('t-start').textContent=t.start;
+    $('t-welcome').textContent=t.welcome; $('t-rules').innerHTML=t.rules;
+    $('t-end').textContent=t.end; $('t-again').textContent=t.again;
+    $('t-pause-title').textContent=t.pauseTitle; $('t-resume').textContent=t.resume;
+    $('lang-fr').classList.toggle('active',LANG==='fr');
+    $('lang-de').classList.toggle('active',LANG==='de');
+    buildPool();
   }
+  $('lang-fr').onclick=()=>{LANG='fr';setLang();};
+  $('lang-de').onclick=()=>{LANG='de';setLang();};
+  setLang();
+
+  // — images
+  const hive=new Image(); let hiveOK=false;
+  hive.onload=()=>{hiveOK=true; layout();}; hive.onerror=layout;
+  hive.src='719AC91B-EB0C-40B6-88AA-254CEA3F46CD.png';
+
+  const jar=new Image(); let jarOK=false;
+  jar.onload=()=>{jarOK=true;}; jar.src='IMG_7596.png';
+
+  // — canvas & layout
+  const cv=$('cv'), X=cv.getContext('2d');
+  let W=0,H=0,dpr=1,hiveRect={x:0,y:0,w:0,h:0}, mouth={x:0,y:0};
+  function layout(){
+    dpr=Math.min(devicePixelRatio||1,2);
+    W=cv.clientWidth; H=cv.clientHeight;
+    cv.width=Math.floor(W*dpr); cv.height=Math.floor(H*dpr);
+    X.setTransform(dpr,0,0,dpr,0,0);
+    const ratio=hiveOK?(hive.naturalWidth/hive.naturalHeight):2.1;
+    const w=Math.min(W*0.92, H*0.8*ratio), h=w/ratio;
+    hiveRect={x:(W-w)/2,y:(H-h)/2,w:hiveOK?w:0,h:hiveOK?h:0};
+    mouth={x:hiveRect.x+hiveRect.w*0.72, y:hiveRect.y+hiveRect.h*0.56};
+  }
+  addEventListener('resize', layout, {passive:true}); layout();
+
+  // — état
+  let running=false, paused=false, timer=30, score=0, mult=1, gold=0, serie=0, serieTTL=0, smoke=0;
+  const ptr={x:W/2,y:H/2,last:0}; let pot={x:W/2,y:H/2};
+  let ents=[]; const MAX=14; let nextPauseAt=20;
+  let pool=[], poolIdx=0;
+  function shuffle(a){for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+  function buildPool(){const t=I18N[LANG]; pool=shuffle([...t.facts.map(x=>"📚 "+x), ...t.coco.map(x=>"😂 "+x)]); poolIdx=0;}
+
+  // — HUD/toasts
+  const scoreEl=$('score'), comboEl=$('combo'), timeEl=$('time'), toasts=$('toasts');
+  function hud(){scoreEl.textContent=score; comboEl.textContent='x'+mult; timeEl.textContent=Math.ceil(timer);}
+  function toast(m){const d=document.createElement('div'); d.className='toast'; d.textContent=m; toasts.appendChild(d);
+    setTimeout(()=>{d.style.opacity='0'; d.style.transform='translateY(-6px)';},1000);
+    setTimeout(()=>d.remove(),1400);
+  }
+
+  // — controles
+  function setPtr(e){const b=cv.getBoundingClientRect(); const t=e.touches?.[0]; const x=t?t.clientX:e.clientX, y=t?t.clientY:e.clientY; if(x!=null){ptr.x=x-b.left; ptr.y=y-b.top;}}
+  cv.addEventListener('mousemove',setPtr); cv.addEventListener('touchmove',setPtr,{passive:true});
+  cv.addEventListener('touchstart',e=>{setPtr(e);const now=performance.now(); if(now-ptr.last<300) smoke=Math.max(smoke,6); ptr.last=now;},{passive:true});
+
+  // — physique
+  const attract=(ax,ay,bx,by,s)=>{let dx=ax-bx,dy=ay-by,d2=dx*dx+dy*dy; if(d2<1)d2=1; const d=Math.sqrt(d2), f=Math.max(-.08,Math.min(.08,s/d2)); return{fx:(dx/d)*f,fy:(dy/d)*f,d};};
+  function spawn(q=false){
+    const ang=(Math.random()*Math.PI/2)-Math.PI/4, dir={x:0.86,y:0.2}, cs=Math.cos(ang), sn=Math.sin(ang);
+    const v={x:dir.x*cs-dir.y*sn, y:dir.x*sn+dir.y*cs}, sp=1.2+Math.random()*0.8;
+    ents.push({t:q?'Q':'B',x:mouth.x+(Math.random()*6-3),y:mouth.y+(Math.random()*6-3),vx:v.x*sp,vy:v.y*sp,r:q?13:10,spd:sp,sw:Math.random()*6.28});
+  }
+  function spawnWasp(){ents.push({t:'W',x:Math.random()*W,y:Math.random()*H,vx:0,vy:0,r:12,spd:1.2,sw:Math.random()*6.28,cd:0});}
+
+  function reset(){
+    score=0; mult=1; timer=30; gold=0; serie=0; serieTTL=0; smoke=0; ents.length=0;
+    for(let i=0;i<MAX;i++) spawn(Math.random()<.12); spawnWasp();
+    pot={x:W/2,y:H/2}; nextPauseAt=20; paused=false; buildPool(); hud();
+  }
+
+  // — dessin
+  function drawHive(){ if(!hiveOK) return;
+    X.fillStyle="rgba(0,0,0,.15)"; X.fillRect(hiveRect.x-8,hiveRect.y-8,hiveRect.w+16,hiveRect.h+16);
+    X.drawImage(hive, hiveRect.x, hiveRect.y, hiveRect.w, hiveRect.h);
+    X.globalAlpha=.33; X.fillStyle='rgba(215,176,106,.7)'; X.beginPath(); X.arc(mouth.x,mouth.y,7,0,6.283); X.fill(); X.globalAlpha=1;
+  }
+  function drawPot(){
+    const pw=Math.min(140, Math.max(110, Math.min(W,H)*0.2)), ph=pw*1.25;
+    const sh=ph*0.13; const g=X.createRadialGradient(pot.x,pot.y+ph*0.45,4,pot.x,pot.y+ph*0.45,pw*0.55);
+    g.addColorStop(0,'rgba(0,0,0,.35)'); g.addColorStop(1,'rgba(0,0,0,0)'); X.fillStyle=g;
+    X.beginPath(); X.ellipse(pot.x,pot.y+ph*0.45,pw*0.52,sh,0,0,6.283); X.fill();
+    if(jarOK) X.drawImage(jar, pot.x-pw/2, pot.y-ph/2, pw, ph);
+  }
+  function drawBee(b){ X.save(); X.translate(b.x,b.y); X.rotate(Math.atan2(b.vy,b.vx));
+    X.fillStyle=(b.t==='Q')?'#ffe08f':'#e7c16a'; X.beginPath(); X.ellipse(0,0,b.r+2,b.r,0,0,6.283); X.fill();
+    X.lineWidth=2; X.strokeStyle='#2b2418'; X.beginPath(); X.moveTo(-b.r,-2); X.lineTo(b.r,-2); X.moveTo(-b.r,2); X.LineTo?0:0; X.moveTo(-b.r,2); X.lineTo(b.r,2); X.stroke(); X.restore(); }
+  function drawWasp(w){ X.save(); X.translate(w.x,w.y); X.rotate(Math.atan2(w.vy,w.vx)); X.fillStyle='#ff7d7d'; X.beginPath(); X.ellipse(0,0,w.r+2,w.r,0,0,6.283); X.fill(); X.restore(); }
+
+  // — boucle
+  function step(dt){
+    if(!running || paused) return;
+    const ez=Math.min(1,dt*7); pot.x+=(ptr.x-pot.x)*ez; pot.y+=(ptr.y-pot.y)*ez;
+
+    const press=1+(1-timer/30)*0.8; if(ents.length<MAX*press) spawn(Math.random()<.15);
+    const FORCE=3400*press;
+
+    for(let i=ents.length-1;i>=0;i--){
+      const e=ents[i]; e.sw+=dt*(.5+Math.random()*.7); e.vx+=Math.cos(e.sw)*.05; e.vy+=Math.sin(e.sw)*.05;
+      if(e.t!=='W'){
+        const sl=smoke>0?.6:1; const a=attract(pot.x,pot.y,e.x,e.y,FORCE*sl);
+        e.vx+=a.fx; e.vy+=a.fy; const cap=2.3*e.spd*sl; e.vx=Math.max(-cap,Math.min(cap,e.vx)); e.vy=Math.max(-cap,Math.min(cap,e.vy));
+        e.x+=e.vx; e.y+=e.vy;
+        if(a.d<80){ score+=(e.t==='Q'?50:10)*mult; serie++; serieTTL=3; if(serie%3===0){gold=6; mult=2; toast(I18N[LANG].gold);} ents.splice(i,1); continue; }
+      } else {
+        const sl=smoke>0?.55:1; const a=attract(e.x,e.y,pot.x,pot.y,3100*sl);
+        e.vx+=a.fx; e.vy+=a.fy; const cap=2.5*sl; e.vx=Math.max(-cap,Math.min(cap,e.vx)); e.vy=Math.max(-cap,Math.min(cap,e.vy));
+        e.x+=e.vx; e.y+=e.vy; if(e.cd>0) e.cd-=dt;
+        if(e.cd<=0 && Math.hypot(e.x-pot.x,e.y-pot.y)<56){ score=Math.max(0,score-10); serie=0; serieTTL=0; mult=gold>0?2:1; e.cd=.9; toast(I18N[LANG].wasp); }
+      }
+      if(e.x<-20)e.x=W+20; if(e.x>W+20)e.x=-20; if(e.y<-20)e.y=H+20; if(e.y>H+20)e.y=-20;
+    }
+
+    if(serieTTL>0){serieTTL-=dt; if(serieTTL<=0) serie=0;}
+    if(gold>0){gold-=dt; if(gold<=0) mult=1;}
+    if(smoke>0) smoke-=dt;
+
+    const before=Math.ceil(timer); timer-=dt; const after=Math.ceil(timer);
+    if(after!==before && after===nextPauseAt && after>0) triggerPause();
+    if(timer<=0){ end(); return; }
+    hud();
+  }
+
+  function triggerPause(){
+    paused=true;
+    const t=I18N[LANG];
+    const msg = pool[poolIdx++ % pool.length] || (LANG==='fr'?'(petite pause)':'(kurze Pause)');
+    $('t-pause-title').textContent=t.pauseTitle; $('t-resume').textContent=t.resume;
+    $('pauseText').textContent=msg;
+    let left=5; $('resumeIn').textContent=left; $('infoPause').style.display='grid';
+    const it=setInterval(()=>{left--; $('resumeIn').textContent=left; if(left<=0){clearInterval(it); $('infoPause').style.display='none'; paused=false;}},1000);
+    nextPauseAt-=10;
+  }
+
+  function render(){
+    X.clearRect(0,0,W,H);
+    X.globalAlpha=.08; X.strokeStyle='#261d14';
+    for(let i=0;i<W;i+=64){X.beginPath(); X.moveTo(i,0); X.lineTo(i,H); X.stroke();}
+    for(let j=0;j<H;j+=64){X.beginPath(); X.moveTo(0,j); X.lineTo(W,j); X.stroke();}
+    X.globalAlpha=1;
+    drawHive();
+    for(const e of ents){(e.t==='W')?drawWasp(e):drawBee(e);}
+    drawPot();
+  }
+
+  function loop(t){ const dt=Math.min(.033,(t-(loop.t||t))/1000); loop.t=t; step(dt); render(); requestAnimationFrame(loop); }
+
+  function start(){
+    reset(); running=true; $('splash').style.display='none'; $('over').style.display='none';
+    loop.t=undefined; requestAnimationFrame(loop);
+  }
+  function end(){ running=false; $('over').style.display='grid';
+    $('final').textContent = (LANG==='fr')?`Score : ${score} • ${mult===2?'miel doré activé':'combo x1'}`:`Punkte: ${score} • ${mult===2?'Goldhonig aktiv':'Kombi x1'}`; }
+
+  // boutons (double sécurité)
+  $('play').addEventListener('click', start); $('start').addEventListener('click', start); $('again').addEventListener('click', start);
+  $('play').onclick=$('start').onclick=$('again').onclick=start;
+
+  // démarrage de la boucle de rendu (même à l’accueil)
+  hud(); requestAnimationFrame(loop);
 })();
 </script>
 </body>
