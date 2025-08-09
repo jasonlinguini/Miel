@@ -139,12 +139,13 @@
     }
   };
 
-  // 👉 TDZ FIX: déclarer pool AVANT setLang/buildPool
+  // (TDZ fix) pool avant setLang/buildPool
   let pool=[], poolIdx=0;
 
   let LANG=(navigator.language||'fr').startsWith('de')?'de':'fr';
-  function buildPool(){const t=I18N[LANG]; pool = [...t.facts.map(x=>"📚 "+x), ...t.coco.map(x=>"😂 "+x)]; // pas besoin de shuffle strict
-    // petit shuffle
+  function buildPool(){
+    const t=I18N[LANG];
+    pool=[...t.facts.map(x=>"📚 "+x), ...t.coco.map(x=>"😂 "+x)];
     for(let i=pool.length-1;i>0;i--){const j=(Math.random()*(i+1))|0; [pool[i],pool[j]]=[pool[j],pool[i]];}
     poolIdx=0;
   }
@@ -164,7 +165,7 @@
   $('lang-de').onclick=()=>{LANG='de';setLang();};
   setLang();
 
-  // ===== images =====
+  // images
   const hive=new Image(); let hiveOK=false;
   hive.onload=()=>{hiveOK=true; layout();}; hive.onerror=layout;
   hive.src='719AC91B-EB0C-40B6-88AA-254CEA3F46CD.png';
@@ -173,7 +174,7 @@
   jar.onload=()=>{jarOK=true;}; jar.onerror=()=>{jarOK=false;};
   jar.src='IMG_7596.png';
 
-  // ===== canvas & layout =====
+  // canvas & layout
   const cv=$('cv'), X=cv.getContext('2d');
   let W=0,H=0,dpr=1,hiveRect={x:0,y:0,w:0,h:0}, mouth={x:0,y:0};
   function layout(){
@@ -188,25 +189,29 @@
   }
   addEventListener('resize', layout, {passive:true}); layout();
 
-  // ===== état =====
-  let running=false, paused=false, timer=30, score=0, mult=1, gold=0, serie=0, serieTTL=0, smoke=0;
+  // état
+  let running=false, paused=false, timer=30, score=0, mult=1;
+  let gold=0, goldActive=false;           // <<< patch
+  let serie=0, serieTTL=0, smoke=0;
   const ptr={x:W/2,y:H/2,last:0}; let pot={x:W/2,y:H/2};
   let ents=[]; const MAX=14; let nextPauseAt=20;
 
-  // ===== HUD / toasts =====
+  // HUD & toasts (limités)
   const scoreEl=$('score'), comboEl=$('combo'), timeEl=$('time'), toasts=$('toasts');
   function hud(){scoreEl.textContent=score; comboEl.textContent='x'+mult; timeEl.textContent=Math.ceil(timer);}
-  function toast(m){const d=document.createElement('div'); d.className='toast'; d.textContent=m; toasts.appendChild(d);
+  function toast(m){
+    while(toasts.children.length>=3) toasts.removeChild(toasts.firstChild); // <<< patch
+    const d=document.createElement('div'); d.className='toast'; d.textContent=m; toasts.appendChild(d);
     setTimeout(()=>{d.style.opacity='0'; d.style.transform='translateY(-6px)';},1000);
     setTimeout(()=>d.remove(),1400);
   }
 
-  // ===== contrôles =====
+  // contrôles
   function setPtr(e){const b=cv.getBoundingClientRect(); const t=e.touches?.[0]; const x=t?t.clientX:e.clientX, y=t?t.clientY:e.clientY; if(x!=null){ptr.x=x-b.left; ptr.y=y-b.top;}}
   cv.addEventListener('mousemove',setPtr); cv.addEventListener('touchmove',setPtr,{passive:true});
   cv.addEventListener('touchstart',e=>{setPtr(e);const now=performance.now(); if(now-ptr.last<300) smoke=Math.max(smoke,6); ptr.last=now;},{passive:true});
 
-  // ===== physique / entités =====
+  // physique/entités
   const attract=(ax,ay,bx,by,s)=>{let dx=ax-bx,dy=ay-by,d2=dx*dx+dy*dy; if(d2<1)d2=1; const d=Math.sqrt(d2), f=Math.max(-.08,Math.min(.08,s/d2)); return{fx:(dx/d)*f,fy:(dy/d)*f,d};};
   function spawn(q=false){
     const ang=(Math.random()*Math.PI/2)-Math.PI/4, dir={x:0.86,y:0.2}, cs=Math.cos(ang), sn=Math.sin(ang);
@@ -216,17 +221,12 @@
   function spawnWasp(){ents.push({t:'W',x:Math.random()*W,y:Math.random()*H,vx:0,vy:0,r:12,spd:1.2,sw:Math.random()*6.28,cd:0});}
 
   function reset(){
-    score=0; mult=1; timer=30; gold=0; serie=0; serieTTL=0; smoke=0; ents.length=0;
+    score=0; mult=1; timer=30; gold=0; goldActive=false; serie=0; serieTTL=0; smoke=0; ents.length=0;
     for(let i=0;i<MAX;i++) spawn(Math.random()<.12); spawnWasp();
     pot={x:W/2,y:H/2}; nextPauseAt=20; paused=false; buildPool(); hud();
   }
 
-  // ===== dessin =====
-  function drawHive(){ if(!hiveOK) return;
-    X.fillStyle="rgba(0,0,0,.15)"; X.fillRect(hiveRect.x-8,hiveRect.y-8,hiveRect.w+16,hiveRect.h+16);
-    X.drawImage(hive, hiveRect.x, hiveRect.y, hiveRect.w, hiveRect.h);
-    X.globalAlpha=.33; X.fillStyle='rgba(215,176,106,.7)'; X.beginPath(); X.arc(mouth.x,mouth.y,7,0,6.283); X.fill(); X.globalAlpha=1;
-  }
+  // dessin
   function drawPot(){
     const pw=Math.min(140, Math.max(110, Math.min(W,H)*0.2)), ph=pw*1.25;
     const sh=ph*0.13; const g=X.createRadialGradient(pot.x,pot.y+ph*0.45,4,pot.x,pot.y+ph*0.45,pw*0.55);
@@ -239,24 +239,17 @@
            X.fillStyle='#caa85a'; X.fillRect(pot.x-pw*0.42, pot.y-ph*0.42, pw*0.84, ph*0.12); }
   }
   function drawBee(b){
-    X.save();
-    X.translate(b.x, b.y);
-    X.rotate(Math.atan2(b.vy, b.vx));
-    X.fillStyle = (b.t === 'Q') ? '#ffe08f' : '#e7c16a';
-    X.beginPath();
-    X.ellipse(0, 0, b.r + 2, b.r, 0, 0, Math.PI * 2);
-    X.fill();
-    X.lineWidth = 2;
-    X.strokeStyle = '#2b2418';
-    X.beginPath();
-    X.moveTo(-b.r, -2); X.lineTo(b.r, -2);
-    X.moveTo(-b.r,  2); X.lineTo(b.r,  2);
-    X.stroke();
+    X.save(); X.translate(b.x,b.y); X.rotate(Math.atan2(b.vy,b.vx));
+    X.fillStyle=(b.t==='Q')?'#ffe08f':'#e7c16a';
+    X.beginPath(); X.ellipse(0,0,b.r+2,b.r,0,0,6.283); X.fill();
+    X.lineWidth=2; X.strokeStyle='#2b2418';
+    X.beginPath(); X.moveTo(-b.r,-2); X.lineTo(b.r,-2); X.moveTo(-b.r,2); X.lineTo(b.r,2); X.stroke();
     X.restore();
   }
   function drawWasp(w){ X.save(); X.translate(w.x,w.y); X.rotate(Math.atan2(w.vy,w.vx)); X.fillStyle='#ff7d7d'; X.beginPath(); X.ellipse(0,0,w.r+2,w.r,0,0,6.283); X.fill(); X.restore(); }
+  function drawHive(){/* optionnel: halo */ }
 
-  // ===== boucle =====
+  // boucle
   function step(dt){
     if(!running || paused) return;
     const ez=Math.min(1,dt*7); pot.x+=(ptr.x-pot.x)*ez; pot.y+=(ptr.y-pot.y)*ez;
@@ -270,7 +263,17 @@
         const sl=smoke>0?.6:1; const a=attract(pot.x,pot.y,e.x,e.y,FORCE*sl);
         e.vx+=a.fx; e.vy+=a.fy; const cap=2.3*e.spd*sl; e.vx=Math.max(-cap,Math.min(cap,e.vx)); e.vy=Math.max(-cap,Math.min(cap,e.vy));
         e.x+=e.vx; e.y+=e.vy;
-        if(a.d<80){ score+=(e.t==='Q'?50:10)*mult; serie++; serieTTL=3; if(serie%3===0){gold=6; mult=2; toast(I18N[LANG].gold);} ents.splice(i,1); continue; }
+        if(a.d<80){
+          score+=(e.t==='Q'?50:10)*mult;
+          serie++; serieTTL=3;
+
+          // PATCH : une seule activation miel doré par cycle
+          if(serie%3===0 && !goldActive){
+            gold=6; goldActive=true; mult=2; toast(I18N[LANG].gold);
+          }
+
+          ents.splice(i,1); continue;
+        }
       } else {
         const sl=smoke>0?.55:1; const a=attract(e.x,e.y,pot.x,pot.y,3100*sl);
         e.vx+=a.fx; e.vy+=a.fy; const cap=2.5*sl; e.vx=Math.max(-cap,Math.min(cap,e.vx)); e.vy=Math.max(-cap,Math.min(cap,e.vy));
@@ -281,7 +284,10 @@
     }
 
     if(serieTTL>0){serieTTL-=dt; if(serieTTL<=0) serie=0;}
-    if(gold>0){gold-=dt; if(gold<=0) mult=1;}
+
+    // PATCH : fin de miel doré propre
+    if(gold>0){ gold-=dt; if(gold<=0){ mult=1; gold=0; goldActive=false; } }
+
     if(smoke>0) smoke-=dt;
 
     const before=Math.ceil(timer); timer-=dt; const after=Math.ceil(timer);
@@ -293,7 +299,7 @@
   function triggerPause(){
     paused=true;
     const t=I18N[LANG];
-    const msg = (pool.length? pool[poolIdx++ % pool.length] : (LANG==='fr'?'(petite pause)':'(kurze Pause)'));
+    const msg=(pool.length? pool[poolIdx++ % pool.length] : (LANG==='fr'?'(petite pause)':'(kurze Pause)'));
     $('t-pause-title').textContent=t.pauseTitle; $('t-resume').textContent=t.resume;
     $('pauseText').textContent=msg;
     let left=5; $('resumeIn').textContent=left; $('infoPause').style.display='grid';
@@ -319,7 +325,7 @@
     loop.t=undefined; requestAnimationFrame(loop);
   }
   function end(){ running=false; $('over').style.display='grid';
-    $('final').textContent = (LANG==='fr')?`Score : ${score} • ${mult===2?'miel doré activé':'combo x1'}`:`Punkte: ${score} • ${mult===2?'Goldhonig aktiv':'Kombi x1'}`; }
+    $('final').textContent=(LANG==='fr')?`Score : ${score} • ${mult===2?'miel doré activé':'combo x1'}`:`Punkte: ${score} • ${mult===2?'Goldhonig aktiv':'Kombi x1'}`; }
 
   $('play').addEventListener('click', start);
   $('start').addEventListener('click', start);
