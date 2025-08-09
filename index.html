@@ -139,9 +139,8 @@
     }
   };
 
-  // (TDZ fix) pool avant setLang/buildPool
+  // ===== Pédago / anecdotes pool =====
   let pool=[], poolIdx=0;
-
   let LANG=(navigator.language||'fr').startsWith('de')?'de':'fr';
   function buildPool(){
     const t=I18N[LANG];
@@ -165,16 +164,21 @@
   $('lang-de').onclick=()=>{LANG='de';setLang();};
   setLang();
 
-  // images
+  // ===== Assets =====
   const hive=new Image(); let hiveOK=false;
   hive.onload=()=>{hiveOK=true; layout();}; hive.onerror=layout;
   hive.src='719AC91B-EB0C-40B6-88AA-254CEA3F46CD.png';
+
+  // GIF abeille (nom avec espaces + & encodés)
+  const beeGif=new Image(); let beeOK=false;
+  beeGif.onload=()=>{beeOK=true;}; beeGif.onerror=()=>{beeOK=false;};
+  beeGif.src='-%20Find%20%26%20Share%20on%20GIPHY.gif';
 
   const jar=new Image(); let jarOK=false;
   jar.onload=()=>{jarOK=true;}; jar.onerror=()=>{jarOK=false;};
   jar.src='IMG_7596.png';
 
-  // canvas & layout
+  // ===== Canvas & layout =====
   const cv=$('cv'), X=cv.getContext('2d');
   let W=0,H=0,dpr=1,hiveRect={x:0,y:0,w:0,h:0}, mouth={x:0,y:0};
   function layout(){
@@ -189,34 +193,34 @@
   }
   addEventListener('resize', layout, {passive:true}); layout();
 
-  // état
+  // ===== État jeu =====
   let running=false, paused=false, timer=30, score=0, mult=1;
-  let gold=0, goldActive=false;           // <<< patch
+  let gold=0, goldActive=false;   // patch anti-spam
   let serie=0, serieTTL=0, smoke=0;
   const ptr={x:W/2,y:H/2,last:0}; let pot={x:W/2,y:H/2};
   let ents=[]; const MAX=14; let nextPauseAt=20;
 
-  // HUD & toasts (limités)
+  // ===== HUD & toasts =====
   const scoreEl=$('score'), comboEl=$('combo'), timeEl=$('time'), toasts=$('toasts');
   function hud(){scoreEl.textContent=score; comboEl.textContent='x'+mult; timeEl.textContent=Math.ceil(timer);}
   function toast(m){
-    while(toasts.children.length>=3) toasts.removeChild(toasts.firstChild); // <<< patch
+    while(toasts.children.length>=3) toasts.removeChild(toasts.firstChild); // limite
     const d=document.createElement('div'); d.className='toast'; d.textContent=m; toasts.appendChild(d);
     setTimeout(()=>{d.style.opacity='0'; d.style.transform='translateY(-6px)';},1000);
     setTimeout(()=>d.remove(),1400);
   }
 
-  // contrôles
+  // ===== Contrôles =====
   function setPtr(e){const b=cv.getBoundingClientRect(); const t=e.touches?.[0]; const x=t?t.clientX:e.clientX, y=t?t.clientY:e.clientY; if(x!=null){ptr.x=x-b.left; ptr.y=y-b.top;}}
   cv.addEventListener('mousemove',setPtr); cv.addEventListener('touchmove',setPtr,{passive:true});
   cv.addEventListener('touchstart',e=>{setPtr(e);const now=performance.now(); if(now-ptr.last<300) smoke=Math.max(smoke,6); ptr.last=now;},{passive:true});
 
-  // physique/entités
+  // ===== Physique / entités =====
   const attract=(ax,ay,bx,by,s)=>{let dx=ax-bx,dy=ay-by,d2=dx*dx+dy*dy; if(d2<1)d2=1; const d=Math.sqrt(d2), f=Math.max(-.08,Math.min(.08,s/d2)); return{fx:(dx/d)*f,fy:(dy/d)*f,d};};
   function spawn(q=false){
     const ang=(Math.random()*Math.PI/2)-Math.PI/4, dir={x:0.86,y:0.2}, cs=Math.cos(ang), sn=Math.sin(ang);
     const v={x:dir.x*cs-dir.y*sn, y:dir.x*sn+dir.y*cs}, sp=1.2+Math.random()*0.8;
-    ents.push({t:q?'Q':'B',x:mouth.x+(Math.random()*6-3),y:mouth.y+(Math.random()*6-3),vx:v.x*sp,vy:v.y*sp,r:q?13:10,spd:sp,sw:Math.random()*6.28});
+    ents.push({t:q?'Q':'B',x:mouth.x+(Math.random()*6-3),y:mouth.y+(Math.random()*6-3),vx:v.x*sp,vy:v.y*sp,r:q?14:12,spd:sp,sw:Math.random()*6.28});
   }
   function spawnWasp(){ents.push({t:'W',x:Math.random()*W,y:Math.random()*H,vx:0,vy:0,r:12,spd:1.2,sw:Math.random()*6.28,cd:0});}
 
@@ -226,7 +230,7 @@
     pot={x:W/2,y:H/2}; nextPauseAt=20; paused=false; buildPool(); hud();
   }
 
-  // dessin
+  // ===== Dessin =====
   function drawPot(){
     const pw=Math.min(140, Math.max(110, Math.min(W,H)*0.2)), ph=pw*1.25;
     const sh=ph*0.13; const g=X.createRadialGradient(pot.x,pot.y+ph*0.45,4,pot.x,pot.y+ph*0.45,pw*0.55);
@@ -238,18 +242,24 @@
            X.strokeRect(pot.x-pw*0.38, pot.y-ph*0.15, pw*0.76, ph*0.55);
            X.fillStyle='#caa85a'; X.fillRect(pot.x-pw*0.42, pot.y-ph*0.42, pw*0.84, ph*0.12); }
   }
+
+  // Abeille / Reine = GIF
   function drawBee(b){
-    X.save(); X.translate(b.x,b.y); X.rotate(Math.atan2(b.vy,b.vx));
-    X.fillStyle=(b.t==='Q')?'#ffe08f':'#e7c16a';
-    X.beginPath(); X.ellipse(0,0,b.r+2,b.r,0,0,6.283); X.fill();
-    X.lineWidth=2; X.strokeStyle='#2b2418';
-    X.beginPath(); X.moveTo(-b.r,-2); X.lineTo(b.r,-2); X.moveTo(-b.r,2); X.lineTo(b.r,2); X.stroke();
+    const sz = (b.t==='Q'? 34 : 28); // reine un poil plus grande
+    X.save();
+    X.translate(b.x,b.y);
+    X.rotate(Math.atan2(b.vy,b.vx)); // légère rotation vers la vitesse
+    if(beeOK) X.drawImage(beeGif, -sz/2, -sz/2, sz, sz);
+    else { // fallback si GIF non chargé
+      X.fillStyle=(b.t==='Q')?'#ffe08f':'#e7c16a';
+      X.beginPath(); X.ellipse(0,0,(b.r+2),(b.r),0,0,6.283); X.fill();
+    }
     X.restore();
   }
-  function drawWasp(w){ X.save(); X.translate(w.x,w.y); X.rotate(Math.atan2(w.vy,w.vx)); X.fillStyle='#ff7d7d'; X.beginPath(); X.ellipse(0,0,w.r+2,w.r,0,0,6.283); X.fill(); X.restore(); }
-  function drawHive(){/* optionnel: halo */ }
 
-  // boucle
+  // Guêpe dessin simple
+  function drawWasp(w){ X.save(); X.translate(w.x,w.y); X.rotate(Math.atan2(w.vy,w.vx)); X.fillStyle='#ff7d7d'; X.beginPath(); X.ellipse(0,0,w.r+2,w.r,0,0,6.283); X.fill(); X.restore(); }
+
   function step(dt){
     if(!running || paused) return;
     const ez=Math.min(1,dt*7); pot.x+=(ptr.x-pot.x)*ez; pot.y+=(ptr.y-pot.y)*ez;
@@ -266,12 +276,7 @@
         if(a.d<80){
           score+=(e.t==='Q'?50:10)*mult;
           serie++; serieTTL=3;
-
-          // PATCH : une seule activation miel doré par cycle
-          if(serie%3===0 && !goldActive){
-            gold=6; goldActive=true; mult=2; toast(I18N[LANG].gold);
-          }
-
+          if(serie%3===0 && !goldActive){ gold=6; goldActive=true; mult=2; toast(I18N[LANG].gold); } // anti-spam
           ents.splice(i,1); continue;
         }
       } else {
@@ -284,10 +289,7 @@
     }
 
     if(serieTTL>0){serieTTL-=dt; if(serieTTL<=0) serie=0;}
-
-    // PATCH : fin de miel doré propre
     if(gold>0){ gold-=dt; if(gold<=0){ mult=1; gold=0; goldActive=false; } }
-
     if(smoke>0) smoke-=dt;
 
     const before=Math.ceil(timer); timer-=dt; const after=Math.ceil(timer);
